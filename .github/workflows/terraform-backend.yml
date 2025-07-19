@@ -1,0 +1,275 @@
+name: 🏗️ Terraform Backend Infrastructure
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'terraform/backend/**'
+      - '.github/workflows/terraform-backend.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'terraform/backend/**'
+      - '.github/workflows/terraform-backend.yml'
+  workflow_dispatch:
+
+env:
+  TF_VERSION: '1.5.0'
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  PROJECT_NAME: ${{ vars.PROJECT_NAME || 'template-app' }}
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  terraform-validate:
+    name: 🧹 Code Quality & Validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform/backend
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: 🐳 Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: 📦 Verify/Create Lambda ZIP
+        working-directory: ./
+        run: |
+          echo "📂 Current directory structure:"
+          ls -la
+          echo "📂 Lambda directory:"
+          ls -la lambda/
+          
+          cd lambda
+          
+          # Verificar Docker
+          echo "🐳 Docker version:"
+          docker --version
+          docker info
+          
+          # Siempre rebuildeamos el ZIP para asegurar dependencias actualizadas
+          echo "🔨 Building Lambda ZIP with Docker for Linux x86_64..."
+          chmod +x package.sh
+          ./package.sh
+          
+          echo "📊 Final ZIP info:"
+          ls -la postConfirmation.zip
+          
+          # Verificar contenido del ZIP
+          echo "🔍 ZIP contents preview:"
+          unzip -l postConfirmation.zip | head -20
+          
+          echo "🔍 Verifying from terraform perspective:"
+          cd ../terraform/backend
+          ls -la ../../lambda/postConfirmation.zip
+
+      - name: 🔧 Terraform Format Check
+        run: terraform fmt -check -recursive
+        continue-on-error: false
+
+      - name: ✅ Terraform Validate
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: 🔍 TFLint Setup
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: 🧪 TFLint Run
+        run: |
+          tflint --init
+          tflint --format compact
+        continue-on-error: true
+
+  terraform-security:
+    name: 🔐 Security & Compliance
+    runs-on: ubuntu-latest
+    needs: terraform-validate
+    defaults:
+      run:
+        working-directory: terraform/backend
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🛡️ tfsec Security Scan
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform/backend
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          soft_fail: true
+
+      - name: 🔍 Checkov Security Analysis
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: terraform/backend
+          framework: terraform
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+          soft_fail: true
+
+  terraform-cost:
+    name: 💰 Cost Analysis
+    runs-on: ubuntu-latest
+    needs: terraform-validate
+    defaults:
+      run:
+        working-directory: terraform/backend
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: 💰 Infracost Setup
+        uses: infracost/actions/setup@v3
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      - name: 💰 Infracost Cost Estimate
+        run: |
+          terraform init -backend=false
+          infracost breakdown --path . \
+            --format json \
+            --out-file /tmp/infracost.json
+          infracost output --path /tmp/infracost.json \
+            --format table
+        continue-on-error: true
+
+  terraform-plan:
+    name: 📋 Terraform Plan
+    runs-on: ubuntu-latest
+    needs: [terraform-validate, terraform-security]
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: terraform/backend
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: 🔐 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🚀 Terraform Init
+        run: terraform init
+
+      - name: 📋 Terraform Plan
+        id: plan
+        run: |
+          terraform plan -no-color \
+            -var="project_name=${{ vars.PROJECT_NAME }}" \
+            -var="google_client_id=${{ secrets.GOOGLE_CLIENT_ID }}" \
+            -var="google_client_secret=${{ secrets.GOOGLE_CLIENT_SECRET }}" \
+            -var="db_host=${{ secrets.DB_HOST }}" \
+            -var="db_user=${{ secrets.DB_USER }}" \
+            -var="db_password=${{ secrets.DB_PASSWORD }}" \
+            -var="db_name=${{ secrets.DB_NAME }}" \
+            -var="db_port=${{ secrets.DB_PORT }}" \
+            -var="production_callback_url=https://${{ vars.DOMAIN || 'template.cloud-it.com.ar' }}" \
+            -var="production_logout_url=https://${{ vars.DOMAIN || 'template.cloud-it.com.ar' }}" \
+            -out=tfplan
+        continue-on-error: true
+
+      - name: 💾 Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-backend-${{ github.sha }}
+          path: terraform/backend/tfplan
+          retention-days: 30
+
+  terraform-apply:
+    name: 🚀 Terraform Apply
+    runs-on: ubuntu-latest
+    needs: terraform-plan
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    environment: production
+    defaults:
+      run:
+        working-directory: terraform/backend
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: 🔐 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🚀 Terraform Init
+        run: terraform init
+
+      - name: 💾 Download Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan-backend-${{ github.sha }}
+          path: terraform/backend/
+
+      - name: ✅ Terraform Apply
+        run: |
+          terraform apply -auto-approve tfplan
+
+      - name: 📊 Save Terraform State Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-state-backend-${{ github.sha }}
+          path: terraform/backend/terraform.tfstate
+          retention-days: 90
+
+  notification:
+    name: 📢 Deployment Notification
+    runs-on: ubuntu-latest
+    needs: terraform-apply
+    if: always()
+    
+    steps:
+      - name: 📧 Success Notification
+        if: needs.terraform-apply.result == 'success'
+        run: |
+          echo "✅ Terraform Backend deployment successful!"
+          echo "Project: ${{ env.PROJECT_NAME }}"
+          echo "Environment: production"
+          echo "Region: ${{ env.AWS_REGION }}"
+
+      - name: ❌ Failure Notification
+        if: needs.terraform-apply.result == 'failure'
+        run: |
+          echo "❌ Terraform Backend deployment failed!"
+          echo "Project: ${{ env.PROJECT_NAME }}"
+          echo "Check logs for details."

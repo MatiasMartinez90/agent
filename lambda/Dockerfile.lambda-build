@@ -1,0 +1,21 @@
+# Dockerfile para compilar dependencias de Lambda localmente
+# Basado en la imagen oficial de AWS Lambda para Python 3.9
+
+FROM public.ecr.aws/lambda/python:3.9
+
+# Establecer directorio de trabajo
+WORKDIR /var/task
+
+# Instalar herramientas necesarias
+RUN yum update -y && \
+    yum install -y zip && \
+    yum clean all
+
+# Copiar requirements.txt
+COPY requirements.txt .
+
+# Instalar dependencias de Python
+RUN pip install -r requirements.txt -t /var/task/package/
+
+# Comando por defecto para crear el ZIP
+CMD ["sh", "-c", "cp *.py package/ && cd package && zip -r ../lambda-package.zip . && ls -la ../lambda-package.zip"]

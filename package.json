@@ -1,0 +1,46 @@
+{
+  "name": "template-app",
+  "version": "1.0.0",
+  "description": "Template reutilizable para aplicaciones AWS con Next.js, Cognito y Terraform",
+  "main": "index.js",
+  "scripts": {
+    "setup": "./scripts/setup-project.sh",
+    "config": "node scripts/apply-config.js",
+    "init-db": "./scripts/init-database.sh",
+    "build": "cd app && npm run build",
+    "dev": "cd app && npm run dev",
+    "install-deps": "cd app && npm install",
+    "build-lambda": "cd lambda && ./package.sh",
+    "terraform-init": "cd terraform/backend && terraform init",
+    "terraform-plan": "cd terraform/backend && terraform plan",
+    "terraform-apply": "cd terraform/backend && terraform apply",
+    "deploy": "npm run build && npm run terraform-apply"
+  },
+  "dependencies": {
+    "@types/aws-lambda": "^8.10.92",
+    "@types/node": "^17.0.19",
+    "aws-cdk": "^2.13.0",
+    "aws-cdk-lib": "^2.13.0",
+    "aws-lambda": "^1.0.7",
+    "cdk-remote-stack": "^2.0.8",
+    "dotenv": "^16.0.3",
+    "esbuild": "^0.14.23"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.3"
+  },
+  "keywords": [
+    "aws",
+    "nextjs",
+    "terraform",
+    "cognito",
+    "template",
+    "react"
+  ],
+  "author": "CloudAcademy Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tu-usuario/template-app"
+  }
+}
