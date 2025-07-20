@@ -2,7 +2,7 @@
 variable "project_name" {
   description = "Project name for unique resource naming"
   type        = string
-  default     = "template-app"
+  default     = "agent"
 }
 
 # Variables para Google OAuth (deben ser definidas)

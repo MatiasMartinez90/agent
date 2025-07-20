@@ -11,7 +11,7 @@ terraform {
   }
   backend "s3" {
     bucket         = "terraform-state-bucket-xj3gjz0e"
-    key            = "aws-template-app/frontend/terraform.tfstate"
+    key            = "aws-agent/frontend/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "terraform-lock-table"
   }
