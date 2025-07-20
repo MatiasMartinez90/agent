@@ -27,15 +27,15 @@ provider "random" {}
 data "terraform_remote_state" "frontend" {
   backend = "s3"
   config = {
-    bucket = "terraform-state-bucket-xj3gjz0e"
-    key    = "aws-agent/frontend/terraform.tfstate"
+    bucket = "terraform-state-bucket-vz26twi7"
+    key    = "agent/frontend/terraform.tfstate"
     region = "us-east-1"
   }
 }
 
 # S3 bucket object para el código de Lambda
 resource "aws_s3_object" "lambda_zip" {
-  bucket = "terraform-state-bucket-xj3gjz0e"
+  bucket = "terraform-state-bucket-vz26twi7"
   key    = "lambda/postConfirmation.zip"
   source = "../../lambda/postConfirmation.zip"
   etag   = filemd5("../../lambda/postConfirmation.zip")

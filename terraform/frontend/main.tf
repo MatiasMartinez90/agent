@@ -34,7 +34,7 @@ data "terraform_remote_state" "backend" {
   backend = "s3"
   config = {
     bucket = "terraform-state-bucket-vz26twi7"
-    key    = "backend/terraform.tfstate"
+    key    = "agent/backend/terraform.tfstate"
     region = "us-east-1"
   }
 }

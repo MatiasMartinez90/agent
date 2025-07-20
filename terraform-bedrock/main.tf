@@ -9,7 +9,7 @@ terraform {
 
   backend "s3" {
     bucket         = "terraform-state-bucket-vz26twi7"
-    key            = "bedrock/terraform.tfstate"
+    key            = "agent/bedrock/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "terraform-lock-table"
     encrypt        = true
