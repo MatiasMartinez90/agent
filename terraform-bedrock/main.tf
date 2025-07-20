@@ -25,7 +25,7 @@ data "aws_caller_identity" "current" {}
 
 # IAM Role for FastAPI to access Bedrock
 resource "aws_iam_role" "fastapi_bedrock_role" {
-  name = "fastapi-bedrock-role"
+  name = "fastapi-bedrock-role-${var.project_name}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -43,13 +43,13 @@ resource "aws_iam_role" "fastapi_bedrock_role" {
   tags = {
     Name        = "FastAPI Bedrock Role"
     Environment = var.environment
-    Project     = "CloudAcademy"
+    Project     = var.project_name
   }
 }
 
 # IAM Policy for Bedrock access
 resource "aws_iam_policy" "bedrock_access" {
-  name        = "bedrock-access-policy"
+  name        = "bedrock-access-policy-${var.project_name}"
   description = "Policy for FastAPI to access Amazon Bedrock"
 
   policy = jsonencode({
@@ -81,7 +81,7 @@ resource "aws_iam_policy" "bedrock_access" {
   tags = {
     Name        = "Bedrock Access Policy"
     Environment = var.environment
-    Project     = "CloudAcademy"
+    Project     = var.project_name
   }
 }
 
@@ -93,13 +93,13 @@ resource "aws_iam_role_policy_attachment" "fastapi_bedrock_policy" {
 
 # IAM User for FastAPI (alternative to EC2 role)
 resource "aws_iam_user" "fastapi_bedrock_user" {
-  name = "fastapi-bedrock-user"
+  name = "fastapi-bedrock-user-${var.project_name}"
   path = "/"
 
   tags = {
     Name        = "FastAPI Bedrock User"
     Environment = var.environment
-    Project     = "CloudAcademy"
+    Project     = var.project_name
   }
 }
 
@@ -116,25 +116,25 @@ resource "aws_iam_access_key" "fastapi_bedrock_key" {
 
 # Store access key in AWS Systems Manager Parameter Store
 resource "aws_ssm_parameter" "bedrock_access_key_id" {
-  name  = "/cloudacademy/bedrock/access_key_id"
+  name  = "/${var.project_name}/bedrock/access_key_id"
   type  = "SecureString"
   value = aws_iam_access_key.fastapi_bedrock_key.id
 
   tags = {
     Name        = "Bedrock Access Key ID"
     Environment = var.environment
-    Project     = "CloudAcademy"
+    Project     = var.project_name
   }
 }
 
 resource "aws_ssm_parameter" "bedrock_secret_access_key" {
-  name  = "/cloudacademy/bedrock/secret_access_key"
+  name  = "/${var.project_name}/bedrock/secret_access_key"
   type  = "SecureString"
   value = aws_iam_access_key.fastapi_bedrock_key.secret
 
   tags = {
     Name        = "Bedrock Secret Access Key"
     Environment = var.environment
-    Project     = "CloudAcademy"
+    Project     = var.project_name
   }
 }

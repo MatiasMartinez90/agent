@@ -24,7 +24,7 @@ variable "bedrock_models" {
 variable "project_name" {
   description = "Project name for tagging"
   type        = string
-  default     = "CloudAcademy"
+  default     = "agent"
 }
 
 variable "enable_cloudwatch_logs" {
