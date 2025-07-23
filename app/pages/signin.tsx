@@ -28,9 +28,8 @@ const AuthUI: NextPage = () => {
 
   if (route === 'authenticated') {
     cache.delete('user')
-    const redirect = Router.query.redirect || '/'
-    Router.push(redirect + '')
-    return <>Redirect...</>
+    Router.push('/chat')
+    return <>Redirigiendo al chat...</>
   }
 
   return (
@@ -41,11 +40,12 @@ const AuthUI: NextPage = () => {
           {/* Logo and title */}
           <div className="text-center">
             <div className="flex items-center justify-center mb-6">
-              <span className="text-3xl font-bold text-indigo-600">DemoApp</span>
-              <span className="ml-2 text-xs bg-red-500 text-white px-2 py-1 rounded uppercase font-bold">DEMO</span>
+              <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Agent Platform
+              </span>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-            <p className="text-gray-600">Sign in to your account</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Accede a tu Entrevista</h2>
+            <p className="text-gray-600">Inicia sesión para comenzar tu proceso de selección</p>
           </div>
 
           {/* Authenticator */}
@@ -141,8 +141,8 @@ const AuthUI: NextPage = () => {
         {/* Content overlay */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-white px-8">
-            <h3 className="text-4xl font-bold mb-4">Launch Your Career</h3>
-            <p className="text-xl opacity-90">Learn Cloud & DevOps with hands-on projects</p>
+            <h3 className="text-4xl font-bold mb-4">Tu Futuro Profesional</h3>
+            <p className="text-xl opacity-90">Comienza tu proceso de selección con IA</p>
           </div>
         </div>
       </div>
