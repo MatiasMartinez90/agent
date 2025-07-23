@@ -2,7 +2,7 @@ name: Terraform Frontend CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, feature/hiring-platform-refactor ]
     paths:
       - 'terraform/frontend/**'
       - '.github/workflows/terraform-frontend.yml'

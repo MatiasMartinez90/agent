@@ -2,7 +2,7 @@ name: 🏗️ Terraform Backend Infrastructure
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, feature/hiring-platform-refactor ]
     paths:
       - 'terraform/backend/**'
       - '.github/workflows/terraform-backend.yml'

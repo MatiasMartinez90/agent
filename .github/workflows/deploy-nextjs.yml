@@ -4,6 +4,7 @@ on:
     branches:
       - main
       - develop
+      - feature/hiring-platform-refactor
     paths:
       - 'app/**'
       - '.github/workflows/deploy-nextjs.yml'
