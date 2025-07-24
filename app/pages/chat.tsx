@@ -92,11 +92,30 @@ const Chat: NextPage = () => {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const aiResponseData = await response.json()
+      // n8n devuelve HTML con la respuesta, necesitamos extraer el contenido
+      const responseText = await response.text()
+      
+      // Extraer el contenido del iframe srcdoc
+      let aiContent = 'Lo siento, no pude procesar tu mensaje. ¿Podrías intentar de nuevo?'
+      
+      if (response.headers.get('content-type')?.includes('application/json')) {
+        // Si es JSON, parsearlo normalmente
+        const aiResponseData = JSON.parse(responseText)
+        aiContent = aiResponseData.output || aiResponseData.response || aiContent
+      } else if (responseText.includes('srcdoc="')) {
+        // Si es HTML con iframe, extraer el contenido del srcdoc
+        const match = responseText.match(/srcdoc="([^"]*)"/)
+        if (match && match[1]) {
+          aiContent = match[1]
+        }
+      } else {
+        // Si es texto plano
+        aiContent = responseText || aiContent
+      }
       
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
-        content: aiResponseData.output || aiResponseData.response || 'Lo siento, no pude procesar tu mensaje. ¿Podrías intentar de nuevo?',
+        content: aiContent,
         isUser: false,
         timestamp: new Date()
       }
