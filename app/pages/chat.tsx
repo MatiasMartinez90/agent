@@ -63,20 +63,59 @@ const Chat: NextPage = () => {
     setIsLoading(true)
 
     try {
-      // TODO: Integrar con n8n webhook
-      // Por ahora, respuesta simulada
-      setTimeout(() => {
-        const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          content: 'Perfecto, entiendo que te interesa esa posición. Cuéntame sobre tu experiencia previa relacionada con este tipo de trabajo.',
-          isUser: false,
-          timestamp: new Date()
-        }
-        setMessages(prev => [...prev, aiResponse])
-        setIsLoading(false)
-      }, 1500)
+      // Integración con n8n webhook
+      const n8nPayload = {
+        message: inputMessage.trim(),
+        user: {
+          email: user?.email || 'unknown@email.com',
+          name: user?.name || 'Usuario Anónimo',
+          picture: user?.picture || null
+        },
+        chatHistory: messages.map(msg => ({
+          content: msg.content,
+          isUser: msg.isUser,
+          timestamp: msg.timestamp.toISOString()
+        })),
+        sessionId: `chat_${Date.now()}`,
+        timestamp: new Date().toISOString()
+      }
+
+      const response = await fetch('https://n8n.cloud-it.com.ar/webhook/456cb3dd-0f9a-42fe-9bd7-bf2d23ed7994', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(n8nPayload)
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const aiResponseData = await response.json()
+      
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: aiResponseData.output || aiResponseData.response || 'Lo siento, no pude procesar tu mensaje. ¿Podrías intentar de nuevo?',
+        isUser: false,
+        timestamp: new Date()
+      }
+      
+      setMessages(prev => [...prev, aiResponse])
+      setIsLoading(false)
+
     } catch (error) {
-      console.error('Error sending message:', error)
+      console.error('Error sending message to n8n:', error)
+      
+      // Fallback response en caso de error
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        content: 'Disculpa, estoy teniendo problemas técnicos. Por favor intenta nuevamente en unos momentos.',
+        isUser: false,
+        timestamp: new Date()
+      }
+      
+      setMessages(prev => [...prev, errorResponse])
       setIsLoading(false)
     }
   }
