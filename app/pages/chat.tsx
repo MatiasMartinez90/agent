@@ -80,7 +80,8 @@ const Chat: NextPage = () => {
         timestamp: new Date().toISOString()
       }
 
-      const response = await fetch('https://n8n.cloud-it.com.ar/webhook/cc4a018d-d373-4e35-88fe-547271539ae9', {
+      const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || 'https://n8n.cloud-it.com.ar/webhook/cc4a018d-d373-4e35-88fe-547271539ae9'
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -189,12 +190,25 @@ const Chat: NextPage = () => {
             >
               <div className={`flex items-start space-x-3 max-w-2xl ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                 {/* Avatar */}
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${
                   message.isUser 
                     ? 'bg-gradient-to-r from-blue-500 to-purple-500' 
                     : 'bg-gradient-to-r from-green-500 to-emerald-500'
                 }`}>
-                  {message.isUser ? '👤' : '🤖'}
+                  {message.isUser ? (
+                    user?.picture ? (
+                      <img 
+                        src={user.picture} 
+                        alt={user.name || 'Usuario'} 
+                        className="w-full h-full object-cover rounded-full"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      '👤'
+                    )
+                  ) : (
+                    '🤖'
+                  )}
                 </div>
 
                 {/* Message Content */}
