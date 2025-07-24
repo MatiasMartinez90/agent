@@ -1,0 +1,12 @@
+{
+  "triggerSource": "PostConfirmation_ConfirmSignUp",
+  "request": {
+    "userAttributes": {
+      "email": "test@example.com",
+      "name": "Test User",
+      "picture": "https://example.com/pic.jpg"
+    }
+  },
+  "userName": "test-user-123",
+  "userPoolId": "us-east-1_MeClCiUAC"
+}
