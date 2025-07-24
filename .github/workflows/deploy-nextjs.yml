@@ -38,10 +38,11 @@ jobs:
           # Run the configuration script to apply template branding
           npm run config
           
-      - name: Set Web API URL environment variable
+      - name: Set environment variables
         run: |
           cd app
           echo "NEXT_PUBLIC_WEB_API_URL=${{ secrets.NEXT_PUBLIC_WEB_API_URL }}" >> .env.local
+          echo "NEXT_PUBLIC_N8N_WEBHOOK_URL=${{ secrets.NEXT_PUBLIC_N8N_WEBHOOK_URL }}" >> .env.local
           
       - name: Build static site
         run: |
@@ -66,8 +67,10 @@ jobs:
       - name: Deploy to S3
         run: aws s3 sync ./app/out s3://website-bucket-xhel8jes/ --delete
         
-      - name: Invalidate CloudFront Cache
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id E38J0OEA92QC5V \
-            --paths "/*"
+      # - name: Invalidate CloudFront Cache
+      #   run: |
+      #     aws cloudfront create-invalidation \
+      #       --distribution-id E38J0OEA92QC5V \
+      #       --paths "/*"
+      #   # Temporarily disabled to save costs during testing
+      #   # Uncomment when ready for production deployments
