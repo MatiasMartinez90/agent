@@ -80,7 +80,7 @@ const Chat: NextPage = () => {
         timestamp: new Date().toISOString()
       }
 
-      const response = await fetch('https://n8n.cloud-it.com.ar/webhook/456cb3dd-0f9a-42fe-9bd7-bf2d23ed7994', {
+      const response = await fetch('https://n8n.cloud-it.com.ar/webhook/cc4a018d-d373-4e35-88fe-547271539ae9', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
