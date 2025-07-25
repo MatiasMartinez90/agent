@@ -206,11 +206,16 @@ const Chat: NextPage = () => {
                         className="w-full h-full object-cover rounded-full border-2 border-white"
                         referrerPolicy="no-referrer"
                         onError={(e) => {
-                          console.error('Error loading user avatar:', e)
+                          console.log('Error loading image:', e)
+                          console.log('Image src:', user.picture)
                         }}
+                        onLoad={() => console.log('Image loaded successfully:', user.picture)}
                       />
                     ) : (
-                      '👤'
+                      <>
+                        {'👤'}
+                        {console.log('No picture available for user:', user)}
+                      </>
                     )
                   ) : (
                     '🤖'
