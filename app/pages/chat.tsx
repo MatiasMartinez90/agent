@@ -12,6 +12,9 @@ interface Message {
 
 const Chat: NextPage = () => {
   const { user, loading, loggedOut, signOut } = useUser({ redirect: '/signin' })
+  
+  // Debug: ver qué datos del usuario tenemos
+  console.log('User data:', user)
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -200,11 +203,19 @@ const Chat: NextPage = () => {
                       <img 
                         src={user.picture} 
                         alt={user.name || 'Usuario'} 
-                        className="w-full h-full object-cover rounded-full"
+                        className="w-full h-full object-cover rounded-full border-2 border-white"
                         referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          console.log('Error loading image:', e)
+                          console.log('Image src:', user.picture)
+                        }}
+                        onLoad={() => console.log('Image loaded successfully:', user.picture)}
                       />
                     ) : (
-                      '👤'
+                      <>
+                        {'👤'}
+                        {console.log('No picture available for user:', user)}
+                      </>
                     )
                   ) : (
                     '🤖'
