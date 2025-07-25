@@ -3,7 +3,22 @@ import useSWR, { useSWRConfig } from 'swr'
 import { Auth } from 'aws-amplify'
 
 const fetcher = async () => {
-  return Auth.currentAuthenticatedUser()
+  const user = await Auth.currentAuthenticatedUser()
+  
+  // Extract user attributes including Google profile picture
+  const userAttributes = await Auth.userAttributes(user)
+  const attributesMap = userAttributes.reduce((acc, attr) => {
+    acc[attr.getName()] = attr.getValue()
+    return acc
+  }, {})
+  
+  return {
+    ...user,
+    attributes: attributesMap,
+    name: attributesMap.name,
+    email: attributesMap.email,
+    picture: attributesMap.picture, // Google profile picture
+  }
 }
 
 export default function useUser({ redirect = '' } = {}) {
