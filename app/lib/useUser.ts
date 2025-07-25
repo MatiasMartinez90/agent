@@ -7,10 +7,10 @@ const fetcher = async () => {
   
   // Extract user attributes including Google profile picture
   const userAttributes = await Auth.userAttributes(user)
-  const attributesMap = userAttributes.reduce((acc, attr) => {
+  const attributesMap: Record<string, string> = userAttributes.reduce((acc, attr) => {
     acc[attr.getName()] = attr.getValue()
     return acc
-  }, {})
+  }, {} as Record<string, string>)
   
   return {
     ...user,
