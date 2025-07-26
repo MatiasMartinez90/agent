@@ -651,6 +651,7 @@ const BedrockCourseContent = ({ user, signOut }: { user: any; signOut: any }) =>
                   courseStep={0}
                   courseContext="bedrock-rag"
                   className="mb-6"
+                  user={user}
                 />
 
                 {/* Continue Button */}
@@ -754,6 +755,7 @@ const BedrockCourseContent = ({ user, signOut }: { user: any; signOut: any }) =>
                     courseStep={currentTaskStep}
                     courseContext="bedrock-rag"
                     className="mt-6"
+                    user={user}
                   />
 
                   {/* Navigation */}

@@ -1,35 +1,49 @@
 import { useState, useRef, useEffect } from 'react'
 import { useBedrockChat, ChatMessage } from '../hooks/useBedrockChat'
+import UserAvatar from './UserAvatar'
 
 interface BedrockChatInterfaceProps {
   courseStep: number
   courseContext?: string
   className?: string
+  user?: any
 }
 
-const ChatMessageComponent = ({ message }: { message: ChatMessage }) => {
+const ChatMessageComponent = ({ message, user }: { message: ChatMessage; user?: any }) => {
   const isUser = message.role === 'user'
   
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
-      <div className={`max-w-[80%] rounded-lg p-3 ${
-        isUser 
-          ? 'bg-blue-600 text-white' 
-          : 'bg-slate-700 text-gray-100 border border-slate-600'
-      }`}>
-        <div className="flex items-center space-x-2 mb-1">
-          <span className="text-xs font-medium opacity-75">
-            {isUser ? '👤 Tú' : '🤖 Asistente IA'}
-          </span>
-          <span className="text-xs opacity-50">
-            {message.timestamp.toLocaleTimeString('es-ES', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}
-          </span>
-        </div>
-        <div className="text-sm leading-relaxed whitespace-pre-wrap">
-          {message.content}
+      <div className={`flex items-start space-x-3 max-w-[80%] ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
+        {/* Avatar */}
+        {isUser ? (
+          <UserAvatar user={user} size="sm" />
+        ) : (
+          <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-r from-green-500 to-emerald-500">
+            <span className="text-white text-xs">🤖</span>
+          </div>
+        )}
+        
+        {/* Message Content */}
+        <div className={`rounded-lg p-3 ${
+          isUser 
+            ? 'bg-blue-600 text-white' 
+            : 'bg-slate-700 text-gray-100 border border-slate-600'
+        }`}>
+          <div className="flex items-center space-x-2 mb-1">
+            <span className="text-xs font-medium opacity-75">
+              {isUser ? 'Tú' : 'Asistente IA'}
+            </span>
+            <span className="text-xs opacity-50">
+              {message.timestamp.toLocaleTimeString('es-ES', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              })}
+            </span>
+          </div>
+          <div className="text-sm leading-relaxed whitespace-pre-wrap">
+            {message.content}
+          </div>
         </div>
       </div>
     </div>
@@ -57,7 +71,8 @@ const LoadingIndicator = () => (
 export default function BedrockChatInterface({ 
   courseStep, 
   courseContext = 'bedrock-rag',
-  className = '' 
+  className = '',
+  user
 }: BedrockChatInterfaceProps) {
   const { messages, loading, error, sendMessage, clearChat } = useBedrockChat()
   const [inputValue, setInputValue] = useState('')
@@ -125,7 +140,7 @@ export default function BedrockChatInterface({
         ) : (
           <>
             {messages.map((message) => (
-              <ChatMessageComponent key={message.id} message={message} />
+              <ChatMessageComponent key={message.id} message={message} user={user} />
             ))}
             {loading && <LoadingIndicator />}
           </>

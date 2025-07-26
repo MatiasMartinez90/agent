@@ -2,6 +2,7 @@ import type { NextPage } from 'next'
 import { useState, useRef, useEffect } from 'react'
 import useUser from '../lib/useUser'
 import Router from 'next/router'
+import UserAvatar from '../components/UserAvatar'
 
 interface Message {
   id: string
@@ -167,9 +168,10 @@ const Chat: NextPage = () => {
           
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <p className="text-white text-sm font-medium">{user?.name}</p>
+              <p className="text-white text-sm font-medium">{user?.name || 'Usuario'}</p>
               <p className="text-slate-400 text-xs">{user?.email}</p>
             </div>
+            <UserAvatar user={user} size="md" />
             <button
               onClick={() => signOut({ redirect: '/' })}
               className="text-slate-400 hover:text-white transition-colors"
@@ -193,34 +195,13 @@ const Chat: NextPage = () => {
             >
               <div className={`flex items-start space-x-3 max-w-2xl ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                 {/* Avatar */}
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${
-                  message.isUser 
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-500' 
-                    : 'bg-gradient-to-r from-green-500 to-emerald-500'
-                }`}>
-                  {message.isUser ? (
-                    user?.picture ? (
-                      <img 
-                        src={user.picture} 
-                        alt={user.name || 'Usuario'} 
-                        className="w-full h-full object-cover rounded-full border-2 border-white"
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          console.log('Error loading image:', e)
-                          console.log('Image src:', user.picture)
-                        }}
-                        onLoad={() => console.log('Image loaded successfully:', user.picture)}
-                      />
-                    ) : (
-                      <>
-                        {'👤'}
-                        {console.log('No picture available for user:', user)}
-                      </>
-                    )
-                  ) : (
-                    '🤖'
-                  )}
-                </div>
+                {message.isUser ? (
+                  <UserAvatar user={user} size="md" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-r from-green-500 to-emerald-500">
+                    <span className="text-white text-sm">🤖</span>
+                  </div>
+                )}
 
                 {/* Message Content */}
                 <div className={`rounded-2xl px-4 py-3 ${

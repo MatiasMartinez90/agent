@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
+import UserAvatar from './UserAvatar'
 
 interface AuthenticatedHeaderProps {
   user: any
@@ -96,19 +97,12 @@ export default function AuthenticatedHeader({ user, signOut }: AuthenticatedHead
               className="flex items-center space-x-2 p-2 rounded-xl hover:bg-slate-700/50 transition-all duration-200 group"
             >
               {/* User Avatar */}
-              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-600 group-hover:border-green-400/70 transition-colors">
-                {tokenPayload?.picture ? (
-                  <img 
-                    src={tokenPayload.picture} 
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white font-bold text-lg">
-                    {tokenPayload?.name?.charAt(0)?.toUpperCase() || tokenPayload?.email?.charAt(0)?.toUpperCase()}
-                  </div>
-                )}
-              </div>
+              <UserAvatar 
+                user={user} 
+                size="lg" 
+                showBorder={true}
+                borderColor="border-slate-600 group-hover:border-green-400/70 transition-colors"
+              />
               
               {/* Dropdown Arrow - Hidden on mobile */}
               <svg 
@@ -170,19 +164,12 @@ export default function AuthenticatedHeader({ user, signOut }: AuthenticatedHead
             {/* User Info */}
             <div className="p-6 border-b border-slate-700">
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-green-400/30">
-                  {tokenPayload?.picture ? (
-                    <img 
-                      src={tokenPayload.picture} 
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white font-bold text-xl">
-                      {tokenPayload?.name?.charAt(0)?.toUpperCase() || tokenPayload?.email?.charAt(0)?.toUpperCase()}
-                    </div>
-                  )}
-                </div>
+                <UserAvatar 
+                  user={user} 
+                  size="xl" 
+                  showBorder={true}
+                  borderColor="border-green-400/30"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="text-white font-semibold text-sm truncate">
                     {tokenPayload?.name || tokenPayload?.given_name || tokenPayload?.email?.split('@')[0]}

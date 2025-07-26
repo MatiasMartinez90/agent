@@ -322,6 +322,7 @@ const BuildVPCCourseContent = ({ user, signOut }: { user: any; signOut: any }) =
                 courseStep={0}
                 courseContext="build-vpc"
                 className="mb-6"
+                user={user}
               />
 
               {/* Continue Button */}
@@ -572,6 +573,7 @@ const BuildVPCCourseContent = ({ user, signOut }: { user: any; signOut: any }) =
                   courseStep={currentTaskStep}
                   courseContext="build-vpc"
                   className="mt-6"
+                  user={user}
                 />
 
                 {/* Navigation */}
