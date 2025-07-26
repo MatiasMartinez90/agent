@@ -279,7 +279,7 @@ const Chat: NextPage = () => {
       <header className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 px-4 py-3">
         <div className="flex justify-between items-center max-w-4xl mx-auto">
           <div className="flex items-center space-x-3">
-            <HRIcon size="md" />
+            <HRIcon size="lg" />
             <div>
               <h1 className="text-white font-semibold">Entrevista con IA</h1>
               <p className="text-slate-400 text-sm">Agent Platform</p>

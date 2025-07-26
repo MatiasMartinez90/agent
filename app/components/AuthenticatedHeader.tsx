@@ -83,13 +83,9 @@ export default function AuthenticatedHeader({ user, signOut }: AuthenticatedHead
             <div className="flex-shrink-0">
               <button 
                 onClick={() => router.push('/')}
-                className="flex items-center hover:opacity-80 transition-opacity space-x-3"
+                className="flex items-center hover:opacity-80 transition-opacity"
               >
-                <HRIcon size="lg" />
-                <div className="flex flex-col items-start">
-                  <span className="text-lg font-bold text-white">Agent Platform</span>
-                  <span className="text-xs text-gray-400">Entrevistas con IA</span>
-                </div>
+                <HRIcon size="xl" />
               </button>
             </div>
           </div>

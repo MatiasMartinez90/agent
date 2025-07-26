@@ -18,15 +18,9 @@ const Home: NextPage = () => {
               <div className="flex-shrink-0">
                 <button 
                   onClick={() => Router.push('/')}
-                  className="flex items-center hover:opacity-80 transition-opacity space-x-3"
+                  className="flex items-center hover:opacity-80 transition-opacity"
                 >
-                  <HRIcon size="lg" />
-                  <div className="flex flex-col items-start">
-                    <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                      Agent Platform
-                    </span>
-                    <span className="text-xs text-gray-400">Entrevistas con IA</span>
-                  </div>
+                  <HRIcon size="xl" />
                 </button>
               </div>
             </div>

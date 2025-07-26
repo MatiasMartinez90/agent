@@ -1,5 +1,5 @@
 interface HRIconProps {
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   className?: string
 }
 
@@ -7,43 +7,81 @@ const HRIcon: React.FC<HRIconProps> = ({ size = 'md', className = '' }) => {
   const sizeClasses = {
     sm: 'w-6 h-6',
     md: 'w-8 h-8', 
-    lg: 'w-10 h-10'
-  }
-
-  const bubbleSizes = {
-    sm: 'px-1 py-0.5 text-xs',
-    md: 'px-1.5 py-0.5 text-xs',
-    lg: 'px-2 py-1 text-sm'
+    lg: 'w-12 h-12',
+    xl: 'w-16 h-16'
   }
 
   return (
     <div className={`${sizeClasses[size]} ${className} flex items-center justify-center relative`}>
-      {/* Person silhouette with gradient */}
+      {/* Main SVG based on original design */}
       <svg 
-        viewBox="0 0 24 24" 
+        viewBox="0 0 100 100" 
         className="w-full h-full"
         fill="none"
       >
-        <defs>
-          <linearGradient id="personGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#60A5FA" />
-            <stop offset="100%" stopColor="#3B82F6" />
-          </linearGradient>
-        </defs>
+        {/* Person body - light blue shirt */}
+        <path 
+          d="M30 65 L30 85 L70 85 L70 65 L65 60 L35 60 Z" 
+          fill="#A7D8FF" 
+          stroke="#1E40AF" 
+          strokeWidth="1"
+        />
         
-        {/* Head */}
-        <circle cx="12" cy="7" r="3" fill="url(#personGradient)" />
-        {/* Body */}
-        <path d="M12 14c-4 0-7 2-7 4v2h14v-2c0-2-3-4-7-4z" fill="url(#personGradient)" />
+        {/* Person collar - darker blue */}
+        <path 
+          d="M35 60 L40 55 L60 55 L65 60 L60 65 L40 65 Z" 
+          fill="#60A5FA" 
+          stroke="#1E40AF" 
+          strokeWidth="1"
+        />
+        
+        {/* Person head - skin tone */}
+        <circle 
+          cx="50" 
+          cy="40" 
+          r="12" 
+          fill="#FBBF7A" 
+          stroke="#1E40AF" 
+          strokeWidth="1"
+        />
+        
+        {/* Hair - black */}
+        <path 
+          d="M38 32 Q50 25 62 32 Q62 28 50 28 Q38 28 38 32" 
+          fill="#1F2937"
+        />
+        
+        {/* HR Speech bubble - large and prominent */}
+        <circle 
+          cx="75" 
+          cy="25" 
+          r="18" 
+          fill="#F3F4F6" 
+          stroke="#6B7280" 
+          strokeWidth="1.5"
+        />
+        
+        {/* HR text */}
+        <text 
+          x="75" 
+          y="30" 
+          textAnchor="middle" 
+          fontSize="12" 
+          fontWeight="bold" 
+          fill="#1F2937"
+          fontFamily="Arial, sans-serif"
+        >
+          HR
+        </text>
+        
+        {/* Speech bubble tail */}
+        <path 
+          d="M60 35 L65 30 L60 25" 
+          fill="#F3F4F6" 
+          stroke="#6B7280" 
+          strokeWidth="1.5"
+        />
       </svg>
-      
-      {/* HR Speech bubble with better styling */}
-      <div className={`absolute -top-1 -right-1 bg-white rounded-full ${bubbleSizes[size]} border border-gray-200 shadow-lg`}>
-        <span className="font-bold text-gray-800">HR</span>
-      </div>
-      
-      {/* Small speech bubble tail */}
-      <div className="absolute top-1 right-2 w-0 h-0 border-l-2 border-l-transparent border-r-2 border-r-transparent border-t-2 border-t-white"></div>
     </div>
   )
 }
