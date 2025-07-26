@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { AVATAR_CONFIG, isMobileDevice, optimizeGoogleImageUrl, getFallbackDelay } from '../utils/avatarConfig'
 import AvatarImage from './AvatarImage'
 
@@ -94,14 +94,14 @@ const SmartUserAvatar: React.FC<SmartUserAvatarProps> = ({
   }, [user])
 
   // Get timeout based on priority and device
-  const getTimeout = () => {
+  const getTimeout = useCallback(() => {
     const baseTimeout = isMobile ? AVATAR_CONFIG.LOAD_TIMEOUT * 0.7 : AVATAR_CONFIG.LOAD_TIMEOUT
     switch (priority) {
       case 'high': return baseTimeout * 0.5
       case 'low': return baseTimeout * 1.5
       default: return baseTimeout
     }
-  }
+  }, [isMobile, priority])
 
   // Handle image loading with smart timeout
   useEffect(() => {
@@ -160,7 +160,7 @@ const SmartUserAvatar: React.FC<SmartUserAvatarProps> = ({
       img.onload = null
       img.onerror = null
     }
-  }, [pictureUrl, isMobile, priority, imageState])
+  }, [pictureUrl, isMobile, priority, imageState, getTimeout])
 
   const shouldShowImage = pictureUrl && imageState === 'loaded' && !showFallback
 

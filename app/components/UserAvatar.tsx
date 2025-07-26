@@ -164,15 +164,13 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         name,
         email,
         initials,
-        imageLoaded,
         imageError,
         imageLoading,
-        retryCount,
         userKeys: user ? Object.keys(user) : 'no user',
         tokenPayload: user?.signInUserSession?.idToken?.payload
       })
     }
-  }, [user, pictureUrl, name, email, initials, imageLoaded, imageError, imageLoading, retryCount])
+  }, [user, pictureUrl, name, email, initials, imageError, imageLoading])
 
   return (
     <div className={`${sizeClasses[size]} rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 relative ${showBorder ? `border-2 ${borderColor}` : ''} ${className}`}>
