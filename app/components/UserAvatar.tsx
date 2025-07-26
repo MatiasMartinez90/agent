@@ -62,14 +62,10 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     // Return first valid URL
     for (const source of sources) {
       if (source && typeof source === 'string' && source.trim().length > 0) {
-        // Ensure HTTPS and add size parameter for Google images
+        // Ensure HTTPS but don't modify Google URLs
         let url = source.trim()
-        if (url.includes('googleusercontent.com')) {
-          // Add size parameter for better loading and remove existing size params
-          url = url.replace(/=s\d+/, '') + '=s96'
-          // Ensure HTTPS
-          url = url.replace(/^http:/, 'https:')
-        }
+        // Only ensure HTTPS, don't modify the URL structure
+        url = url.replace(/^http:/, 'https:')
         return url
       }
     }

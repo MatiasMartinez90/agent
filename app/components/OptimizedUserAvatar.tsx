@@ -50,12 +50,8 @@ const OptimizedUserAvatar: React.FC<OptimizedUserAvatarProps> = ({
         let url = source.trim()
         
         // Optimize Google images
-        if (url.includes('googleusercontent.com')) {
-          // Remove existing size parameters and add optimized size
-          url = url.replace(/=s\d+/, '') + '=s96'
-          // Ensure HTTPS
-          url = url.replace(/^http:/, 'https:')
-        }
+        // Only ensure HTTPS, don't modify Google URL structure
+        url = url.replace(/^http:/, 'https:')
         
         return url
       }

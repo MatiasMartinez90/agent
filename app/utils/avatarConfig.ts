@@ -25,17 +25,10 @@ export const isMobileDevice = (): boolean => {
   return window.innerWidth < AVATAR_CONFIG.MOBILE_BREAKPOINT
 }
 
-// Utility to optimize Google image URLs
+// Utility to ensure HTTPS for Google image URLs (don't modify structure)
 export const optimizeGoogleImageUrl = (url: string): string => {
-  if (!url.includes('googleusercontent.com')) return url
-  
-  // Remove existing size parameters and add optimized size
-  let optimizedUrl = url.replace(/=s\d+/, '') + `=s${AVATAR_CONFIG.GOOGLE_IMAGE_SIZE}`
-  
-  // Ensure HTTPS
-  optimizedUrl = optimizedUrl.replace(/^http:/, 'https:')
-  
-  return optimizedUrl
+  // Only ensure HTTPS, don't modify the URL structure to avoid 400 errors
+  return url.replace(/^http:/, 'https:')
 }
 
 // Utility to get fallback delay based on device
