@@ -1,6 +1,4 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { useImagePreloader } from '../hooks/useImagePreloader'
-import AvatarImage from './AvatarImage'
 
 interface UserAvatarProps {
   user: any
@@ -78,16 +76,27 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     return null
   }, [user])
 
-  // Use the image preloader hook
-  const { loaded: imageLoaded, error: imageError, loading: imageLoading, retryCount, cachedUrl } = useImagePreloader(pictureUrl, {
-    maxRetries: 3,
-    retryDelay: 1000,
-    timeout: 8000,
-    useCache: true
-  })
+  // Simple image loading state
+  const [imageError, setImageError] = useState(false)
+  const [imageLoading, setImageLoading] = useState(true)
 
-  // Use cached URL if available, otherwise fall back to original
-  const displayUrl = cachedUrl || pictureUrl
+  // Reset error state when user changes
+  useEffect(() => {
+    setImageError(false)
+    setImageLoading(true)
+  }, [pictureUrl])
+
+  const handleImageError = useCallback(() => {
+    console.log('Error loading user image:', pictureUrl)
+    setImageError(true)
+    setImageLoading(false)
+  }, [pictureUrl])
+
+  const handleImageLoad = useCallback(() => {
+    console.log('User image loaded successfully:', pictureUrl)
+    setImageLoading(false)
+    setImageError(false)
+  }, [pictureUrl])
 
   // Get user name from different possible sources
   const getUserName = useCallback(() => {
@@ -171,36 +180,36 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
 
   return (
     <div className={`${sizeClasses[size]} rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 relative ${showBorder ? `border-2 ${borderColor}` : ''} ${className}`}>
-      {displayUrl && imageLoaded && !imageError ? (
-        <AvatarImage 
-          src={displayUrl} 
-          alt={name || email || 'Usuario'} 
-          className="w-full h-full object-cover rounded-full transition-opacity duration-200"
-        />
+      {pictureUrl && !imageError ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src={pictureUrl} 
+            alt={name || email || 'Usuario'} 
+            className="w-full h-full object-cover rounded-full"
+            referrerPolicy="no-referrer"
+            crossOrigin="anonymous"
+            loading="eager"
+            onError={handleImageError}
+            onLoad={handleImageLoad}
+            style={{ display: imageLoading ? 'none' : 'block' }}
+          />
+          {imageLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-500">
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white opacity-70"></div>
+            </div>
+          )}
+        </>
       ) : (
         <span className={`text-white font-medium ${textSizes[size]} select-none`}>
           {initials}
         </span>
       )}
       
-      {/* Loading indicator */}
-      {imageLoading && pictureUrl && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-500">
-          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white opacity-70"></div>
-        </div>
-      )}
-      
       {/* Error indicator for debugging */}
       {process.env.NODE_ENV === 'development' && imageError && (
         <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
           ❌
-        </div>
-      )}
-      
-      {/* Retry indicator for debugging */}
-      {process.env.NODE_ENV === 'development' && retryCount > 0 && (
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
-          {retryCount}
         </div>
       )}
     </div>
