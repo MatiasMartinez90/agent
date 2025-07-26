@@ -288,7 +288,8 @@ const Chat: NextPage = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <div className="text-right">
+            {/* Nombre y email - Solo visible en desktop */}
+            <div className="text-right hidden sm:block">
               <p className="text-white text-sm font-medium">{getUserName()}</p>
               <p className="text-slate-400 text-xs">{getUserEmail()}</p>
             </div>

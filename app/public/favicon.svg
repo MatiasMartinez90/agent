@@ -1,0 +1,13 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="16" fill="#6366f1"/>
+  
+  <!-- Person icon (simplified) -->
+  <circle cx="16" cy="11" r="4" fill="white"/>
+  <path d="M8 24c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="white" stroke-width="2" fill="none"/>
+  
+  <!-- Chat bubble -->
+  <circle cx="24" cy="8" r="6" fill="#10b981"/>
+  <path d="M21 6h6v4h-6l-2 2v-2z" fill="#10b981"/>
+  <circle cx="24" cy="8" r="1" fill="white"/>
+</svg>
