@@ -13,6 +13,19 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   className = ''
 }) => {
   const [showRecordingUI, setShowRecordingUI] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768
+      setIsMobile(mobile)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
   
   const {
     isRecording,
@@ -121,10 +134,10 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     <button
       onClick={handleStartRecording}
       disabled={disabled}
-      className={`p-3 text-gray-400 hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
-      title="Mantén presionado para grabar audio"
+      className={`${isMobile ? 'p-4' : 'p-3'} text-gray-400 hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      title={isMobile ? "Toca para grabar audio" : "Mantén presionado para grabar audio"}
     >
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className={`${isMobile ? 'w-7 h-7' : 'w-6 h-6'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
       </svg>
     </button>

@@ -54,25 +54,35 @@ export const useVoiceRecording = (options: UseVoiceRecordingOptions = {}) => {
     try {
       setState(prev => ({ ...prev, error: null }))
       
-      // Request microphone access
+      // Detect mobile for optimized settings
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      
+      // Request microphone access with mobile-optimized settings
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 44100
+          sampleRate: isMobile ? 22050 : 44100, // Lower quality on mobile for performance
+          channelCount: 1 // Mono for smaller file size
         } 
       })
       
       streamRef.current = stream
       chunksRef.current = []
 
-      // Create MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-          ? 'audio/webm;codecs=opus' 
-          : 'audio/webm'
-      })
+      // Create MediaRecorder with mobile-compatible format detection
+      let mimeType = 'audio/webm'
+      
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        mimeType = 'audio/webm;codecs=opus'
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4' // Safari fallback
+      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        mimeType = 'audio/webm'
+      }
+      
+      const mediaRecorder = new MediaRecorder(stream, { mimeType })
       
       mediaRecorderRef.current = mediaRecorder
 

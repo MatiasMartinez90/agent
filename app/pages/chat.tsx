@@ -6,6 +6,7 @@ import SmartUserAvatar from '../components/SmartUserAvatar'
 import HRIcon from '../components/HRIcon'
 import VoiceRecorder from '../components/VoiceRecorder'
 import VoiceMessage from '../components/VoiceMessage'
+import VoiceDiagnostics from '../components/VoiceDiagnostics'
 import { useChatPersistence } from '../hooks/useChatPersistence'
 
 interface Message {
@@ -83,6 +84,7 @@ const Chat: NextPage = () => {
   console.log('========================')
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showDiagnostics, setShowDiagnostics] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -341,6 +343,19 @@ const Chat: NextPage = () => {
               <p className="text-slate-400 text-xs">{getUserEmail()}</p>
             </div>
             <SmartUserAvatar user={user} size="md" priority="high" />
+            {/* Debug button - only in development */}
+            {process.env.NODE_ENV === 'development' && (
+              <button
+                onClick={() => setShowDiagnostics(true)}
+                className="text-slate-400 hover:text-yellow-400 transition-colors"
+                title="Voice Diagnostics"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+              </button>
+            )}
+            
             <button
               onClick={() => signOut({ redirect: '/' })}
               className="text-slate-400 hover:text-white transition-colors"
@@ -461,6 +476,12 @@ const Chat: NextPage = () => {
           </div>
         </div>
       </div>
+      
+      {/* Voice Diagnostics Modal */}
+      <VoiceDiagnostics 
+        show={showDiagnostics} 
+        onClose={() => setShowDiagnostics(false)} 
+      />
     </div>
   )
 }
