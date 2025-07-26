@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import useUser from '../lib/useUser'
 import Router from 'next/router'
 import SmartUserAvatar from '../components/SmartUserAvatar'
+import UserAvatar from '../components/UserAvatar'
 import HRIcon from '../components/HRIcon'
 import VoiceRecorder from '../components/VoiceRecorder'
 import VoiceMessage from '../components/VoiceMessage'
@@ -342,7 +343,7 @@ const Chat: NextPage = () => {
               <p className="text-white text-sm font-medium">{getUserName()}</p>
               <p className="text-slate-400 text-xs">{getUserEmail()}</p>
             </div>
-            <SmartUserAvatar user={user} size="md" priority="high" />
+            <UserAvatar user={user} size="md" />
             {/* Debug button - only in development */}
             {process.env.NODE_ENV === 'development' && (
               <button
@@ -380,7 +381,7 @@ const Chat: NextPage = () => {
               <div className={`flex items-start space-x-3 max-w-2xl ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                 {/* Avatar */}
                 {message.isUser ? (
-                  <SmartUserAvatar user={user} size="md" priority="normal" />
+                  <UserAvatar user={user} size="md" />
                 ) : (
                   <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-r from-green-500 to-emerald-500">
                     <span className="text-white text-sm">🤖</span>
@@ -437,12 +438,6 @@ const Chat: NextPage = () => {
 
         {/* Input Area */}
         <div className="border-t border-slate-700/50 bg-slate-800/30 backdrop-blur-sm p-4">
-          <VoiceRecorder
-            onSendVoice={sendVoiceMessage}
-            disabled={isLoading}
-            className="mb-4"
-          />
-          
           <div className="flex items-end space-x-3">
             <div className="flex-1">
               <textarea
