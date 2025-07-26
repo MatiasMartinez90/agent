@@ -24,12 +24,25 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
 
   // Create audio URL from blob or use provided URL
   useEffect(() => {
-    if (audioBlob) {
-      const url = URL.createObjectURL(audioBlob)
-      setAudioSrc(url)
-      return () => URL.revokeObjectURL(url)
+    if (audioBlob && audioBlob.size > 0) {
+      try {
+        const url = URL.createObjectURL(audioBlob)
+        setAudioSrc(url)
+        console.log('Audio blob URL created:', url, 'Size:', audioBlob.size, 'Type:', audioBlob.type)
+        return () => {
+          URL.revokeObjectURL(url)
+          console.log('Audio blob URL revoked:', url)
+        }
+      } catch (error) {
+        console.error('Error creating audio URL from blob:', error)
+        setAudioSrc(null)
+      }
     } else if (audioUrl) {
       setAudioSrc(audioUrl)
+      console.log('Using provided audio URL:', audioUrl)
+    } else {
+      setAudioSrc(null)
+      console.log('No audio source available')
     }
   }, [audioBlob, audioUrl])
 
@@ -128,21 +141,25 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
           />
         </div>
 
-        {/* Waveform visualization (simplified) */}
+        {/* Waveform visualization (static, based on progress) */}
         <div className="flex items-center space-x-0.5 h-6">
-          {[...Array(30)].map((_, i) => (
-            <div
-              key={i}
-              className={`w-0.5 rounded-full transition-all duration-100 ${
-                i < (progressPercentage / 100) * 30
-                  ? isUser ? 'bg-white' : 'bg-blue-400'
-                  : isUser ? 'bg-white/30' : 'bg-slate-500'
-              }`}
-              style={{
-                height: `${Math.sin(i * 0.5) * 10 + 15}px`
-              }}
-            />
-          ))}
+          {[...Array(30)].map((_, i) => {
+            const isActive = i < (progressPercentage / 100) * 30
+            const baseHeight = 8 + (i % 3) * 4 // Static pattern instead of Math.sin
+            return (
+              <div
+                key={i}
+                className={`w-0.5 rounded-full transition-all duration-200 ${
+                  isActive
+                    ? isUser ? 'bg-white' : 'bg-blue-400'
+                    : isUser ? 'bg-white/30' : 'bg-slate-500'
+                }`}
+                style={{
+                  height: `${baseHeight}px`
+                }}
+              />
+            )
+          })}
         </div>
       </div>
 

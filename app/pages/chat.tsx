@@ -203,6 +203,12 @@ const Chat: NextPage = () => {
   const sendVoiceMessage = async (audioBlob: Blob, duration: number) => {
     if (isLoading) return
 
+    console.log('Sending voice message:', {
+      blobSize: audioBlob.size,
+      blobType: audioBlob.type,
+      duration: duration
+    })
+
     // Agregar mensaje de voz del usuario
     const userMessage = addVoiceMessage(audioBlob, duration, true)
     setIsLoading(true)
@@ -219,7 +225,7 @@ const Chat: NextPage = () => {
       if (type === 'voice' && content instanceof Blob) {
         // Enviar audio como FormData
         const formData = new FormData()
-        formData.append('audio', content, 'voice-message.webm')
+        formData.append('audio', content, `voice-message-${Date.now()}.webm`)
         formData.append('duration', duration?.toString() || '0')
         formData.append('type', 'voice')
         formData.append('user', JSON.stringify({
@@ -235,6 +241,13 @@ const Chat: NextPage = () => {
         }))))
         formData.append('sessionId', `chat_${Date.now()}`)
         formData.append('timestamp', new Date().toISOString())
+
+        console.log('Sending FormData to N8N:', {
+          audioSize: content.size,
+          audioType: content.type,
+          duration: duration,
+          webhookUrl: webhookUrl
+        })
 
         response = await fetch(webhookUrl, {
           method: 'POST',
@@ -273,25 +286,37 @@ const Chat: NextPage = () => {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      // n8n devuelve HTML con la respuesta, necesitamos extraer el contenido
+      // n8n puede devolver diferentes tipos de respuesta
       const responseText = await response.text()
+      console.log('N8N Response:', {
+        status: response.status,
+        contentType: response.headers.get('content-type'),
+        responseLength: responseText.length,
+        responsePreview: responseText.substring(0, 200)
+      })
       
-      // Extraer el contenido del iframe srcdoc
+      // Extraer el contenido de la respuesta
       let aiContent = 'Lo siento, no pude procesar tu mensaje. ¿Podrías intentar de nuevo?'
       
-      if (response.headers.get('content-type')?.includes('application/json')) {
-        // Si es JSON, parsearlo normalmente
-        const aiResponseData = JSON.parse(responseText)
-        aiContent = aiResponseData.output || aiResponseData.response || aiContent
-      } else if (responseText.includes('srcdoc="')) {
-        // Si es HTML con iframe, extraer el contenido del srcdoc
-        const match = responseText.match(/srcdoc="([^"]*)"/)
-        if (match && match[1]) {
-          aiContent = match[1]
+      try {
+        if (response.headers.get('content-type')?.includes('application/json')) {
+          // Si es JSON, parsearlo normalmente
+          const aiResponseData = JSON.parse(responseText)
+          aiContent = aiResponseData.output || aiResponseData.response || aiResponseData.message || aiContent
+        } else if (responseText.includes('srcdoc="')) {
+          // Si es HTML con iframe, extraer el contenido del srcdoc
+          const match = responseText.match(/srcdoc="([^"]*)"/)
+          if (match && match[1]) {
+            aiContent = match[1]
+          }
+        } else if (responseText.trim()) {
+          // Si es texto plano y no está vacío
+          aiContent = responseText.trim()
         }
-      } else {
-        // Si es texto plano
-        aiContent = responseText || aiContent
+      } catch (parseError) {
+        console.error('Error parsing N8N response:', parseError)
+        console.log('Raw response text:', responseText)
+        aiContent = 'Recibí tu mensaje pero hubo un problema al procesar la respuesta. ¿Podrías intentar de nuevo?'
       }
       
       // Agregar respuesta del agente usando el hook de persistencia
