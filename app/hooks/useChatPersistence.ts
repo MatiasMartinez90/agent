@@ -5,6 +5,12 @@ interface Message {
   content: string
   isUser: boolean
   timestamp: Date
+  type?: 'text' | 'voice'
+  voiceData?: {
+    audioBlob?: Blob
+    audioUrl?: string
+    duration: number
+  }
 }
 
 const STORAGE_KEY = 'agent_chat_messages'
@@ -82,16 +88,27 @@ export const useChatPersistence = () => {
     }
   }
 
-  const addMessage = (content: string, isUser: boolean): Message => {
+  const addMessage = (content: string, isUser: boolean, type: 'text' | 'voice' = 'text', voiceData?: { audioBlob?: Blob; audioUrl?: string; duration: number }): Message => {
     const newMessage: Message = {
       id: Date.now().toString(),
       content,
       isUser,
-      timestamp: new Date()
+      timestamp: new Date(),
+      type,
+      voiceData
     }
     
     setMessages(prev => [...prev, newMessage])
     return newMessage
+  }
+
+  const addVoiceMessage = (audioBlob: Blob, duration: number, isUser: boolean): Message => {
+    const content = isUser ? `🎤 Mensaje de voz (${Math.floor(duration)}s)` : `🤖 Respuesta de voz (${Math.floor(duration)}s)`
+    
+    return addMessage(content, isUser, 'voice', {
+      audioBlob,
+      duration
+    })
   }
 
   const clearMessages = () => {
@@ -113,6 +130,7 @@ export const useChatPersistence = () => {
   return {
     messages,
     addMessage,
+    addVoiceMessage,
     clearMessages,
     isLoaded
   }

@@ -4,6 +4,8 @@ import useUser from '../lib/useUser'
 import Router from 'next/router'
 import SmartUserAvatar from '../components/SmartUserAvatar'
 import HRIcon from '../components/HRIcon'
+import VoiceRecorder from '../components/VoiceRecorder'
+import VoiceMessage from '../components/VoiceMessage'
 import { useChatPersistence } from '../hooks/useChatPersistence'
 
 interface Message {
@@ -15,7 +17,7 @@ interface Message {
 
 const Chat: NextPage = () => {
   const { user, loading, loggedOut, signOut } = useUser({ redirect: '/signin' })
-  const { messages, addMessage, isLoaded } = useChatPersistence()
+  const { messages, addMessage, addVoiceMessage, isLoaded } = useChatPersistence()
 
   // Helper functions to extract user data consistently
   const getUserName = () => {
@@ -188,35 +190,81 @@ const Chat: NextPage = () => {
 
     // Agregar mensaje del usuario usando el hook de persistencia
     const userMessage = addMessage(inputMessage.trim(), true)
+    const messageText = inputMessage.trim()
     setInputMessage('')
     setIsLoading(true)
 
+    await sendToN8N(messageText, 'text')
+  }
+
+  const sendVoiceMessage = async (audioBlob: Blob, duration: number) => {
+    if (isLoading) return
+
+    // Agregar mensaje de voz del usuario
+    const userMessage = addVoiceMessage(audioBlob, duration, true)
+    setIsLoading(true)
+
+    await sendToN8N(audioBlob, 'voice', duration)
+  }
+
+  const sendToN8N = async (content: string | Blob, type: 'text' | 'voice', duration?: number) => {
     try {
-      // Integración con n8n webhook
-      const n8nPayload = {
-        message: inputMessage.trim(),
-        user: {
+      const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || 'https://n8n.cloud-it.com.ar/webhook/cc4a018d-d373-4e35-88fe-547271539ae9'
+      
+      let response: Response
+
+      if (type === 'voice' && content instanceof Blob) {
+        // Enviar audio como FormData
+        const formData = new FormData()
+        formData.append('audio', content, 'voice-message.webm')
+        formData.append('duration', duration?.toString() || '0')
+        formData.append('type', 'voice')
+        formData.append('user', JSON.stringify({
           email: getUserEmail() || 'unknown@email.com',
           name: getUserName(),
           picture: user?.picture || user?.signInUserSession?.idToken?.payload?.picture || user?.attributes?.picture || null
-        },
-        chatHistory: messages.map(msg => ({
+        }))
+        formData.append('chatHistory', JSON.stringify(messages.map(msg => ({
           content: msg.content,
           isUser: msg.isUser,
-          timestamp: msg.timestamp.toISOString()
-        })),
-        sessionId: `chat_${Date.now()}`,
-        timestamp: new Date().toISOString()
-      }
+          timestamp: msg.timestamp.toISOString(),
+          type: msg.type || 'text'
+        }))))
+        formData.append('sessionId', `chat_${Date.now()}`)
+        formData.append('timestamp', new Date().toISOString())
 
-      const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || 'https://n8n.cloud-it.com.ar/webhook/cc4a018d-d373-4e35-88fe-547271539ae9'
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(n8nPayload)
-      })
+        response = await fetch(webhookUrl, {
+          method: 'POST',
+          body: formData
+        })
+      } else {
+        // Enviar texto como JSON
+        const n8nPayload = {
+          message: content as string,
+          type: 'text',
+          user: {
+            email: getUserEmail() || 'unknown@email.com',
+            name: getUserName(),
+            picture: user?.picture || user?.signInUserSession?.idToken?.payload?.picture || user?.attributes?.picture || null
+          },
+          chatHistory: messages.map(msg => ({
+            content: msg.content,
+            isUser: msg.isUser,
+            timestamp: msg.timestamp.toISOString(),
+            type: msg.type || 'text'
+          })),
+          sessionId: `chat_${Date.now()}`,
+          timestamp: new Date().toISOString()
+        }
+
+        response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(n8nPayload)
+        })
+      }
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -325,18 +373,28 @@ const Chat: NextPage = () => {
                 )}
 
                 {/* Message Content */}
-                <div className={`rounded-2xl px-4 py-3 ${
-                  message.isUser 
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
-                    : 'bg-slate-800 text-slate-100 border border-slate-700'
-                }`}>
-                  <p className="text-sm leading-relaxed">{message.content}</p>
-                  <p className={`text-xs mt-2 opacity-70 ${
-                    message.isUser ? 'text-blue-100' : 'text-slate-400'
+                {message.type === 'voice' && message.voiceData ? (
+                  <VoiceMessage
+                    audioBlob={message.voiceData.audioBlob}
+                    audioUrl={message.voiceData.audioUrl}
+                    duration={message.voiceData.duration}
+                    isUser={message.isUser}
+                    timestamp={message.timestamp}
+                  />
+                ) : (
+                  <div className={`rounded-2xl px-4 py-3 ${
+                    message.isUser 
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
+                      : 'bg-slate-800 text-slate-100 border border-slate-700'
                   }`}>
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
+                    <p className="text-sm leading-relaxed">{message.content}</p>
+                    <p className={`text-xs mt-2 opacity-70 ${
+                      message.isUser ? 'text-blue-100' : 'text-slate-400'
+                    }`}>
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -364,6 +422,12 @@ const Chat: NextPage = () => {
 
         {/* Input Area */}
         <div className="border-t border-slate-700/50 bg-slate-800/30 backdrop-blur-sm p-4">
+          <VoiceRecorder
+            onSendVoice={sendVoiceMessage}
+            disabled={isLoading}
+            className="mb-4"
+          />
+          
           <div className="flex items-end space-x-3">
             <div className="flex-1">
               <textarea
@@ -371,12 +435,20 @@ const Chat: NextPage = () => {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Escribe tu respuesta..."
+                placeholder="Escribe tu respuesta o usa el micrófono..."
                 className="w-full bg-slate-800 border border-slate-600 rounded-2xl px-4 py-3 text-white placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32"
                 rows={1}
                 disabled={isLoading}
               />
             </div>
+            
+            {/* Voice Recorder Button */}
+            <VoiceRecorder
+              onSendVoice={sendVoiceMessage}
+              disabled={isLoading}
+            />
+            
+            {/* Send Text Button */}
             <button
               onClick={sendMessage}
               disabled={!inputMessage.trim() || isLoading}
