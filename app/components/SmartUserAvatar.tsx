@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { AVATAR_CONFIG, isMobileDevice, optimizeGoogleImageUrl, getFallbackDelay } from '../utils/avatarConfig'
+import AvatarImage from './AvatarImage'
 
 interface SmartUserAvatarProps {
   user: any
@@ -166,17 +167,10 @@ const SmartUserAvatar: React.FC<SmartUserAvatarProps> = ({
   return (
     <div className={`${sizeClasses[size]} rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 relative ${showBorder ? `border-2 ${borderColor}` : ''} ${className}`}>
       {shouldShowImage ? (
-        <img 
+        <AvatarImage 
           src={pictureUrl} 
           alt={initials}
           className="w-full h-full object-cover rounded-full transition-opacity duration-300"
-          referrerPolicy="no-referrer"
-          crossOrigin="anonymous"
-          loading={priority === 'high' ? 'eager' : 'lazy'}
-          draggable={false}
-          style={{ 
-            opacity: showFallback ? 0 : 1
-          }}
         />
       ) : null}
       

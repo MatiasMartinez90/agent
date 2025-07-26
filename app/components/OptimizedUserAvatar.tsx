@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import AvatarImage from './AvatarImage'
 
 interface OptimizedUserAvatarProps {
   user: any
@@ -137,14 +138,10 @@ const OptimizedUserAvatar: React.FC<OptimizedUserAvatarProps> = ({
   return (
     <div className={`${sizeClasses[size]} rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 relative ${showBorder ? `border-2 ${borderColor}` : ''} ${className}`}>
       {shouldShowImage ? (
-        <img 
+        <AvatarImage 
           src={pictureUrl} 
           alt={initials}
           className="w-full h-full object-cover rounded-full"
-          referrerPolicy="no-referrer"
-          crossOrigin="anonymous"
-          loading="eager"
-          draggable={false}
         />
       ) : (
         <span className={`text-white font-medium ${textSizes[size]} select-none`}>

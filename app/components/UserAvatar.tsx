@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useImagePreloader } from '../hooks/useImagePreloader'
+import AvatarImage from './AvatarImage'
 
 interface UserAvatarProps {
   user: any
@@ -171,17 +172,10 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   return (
     <div className={`${sizeClasses[size]} rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 relative ${showBorder ? `border-2 ${borderColor}` : ''} ${className}`}>
       {displayUrl && imageLoaded && !imageError ? (
-        <img 
+        <AvatarImage 
           src={displayUrl} 
           alt={name || email || 'Usuario'} 
           className="w-full h-full object-cover rounded-full transition-opacity duration-200"
-          referrerPolicy="no-referrer"
-          crossOrigin="anonymous"
-          loading="eager"
-          draggable={false}
-          style={{ 
-            opacity: imageLoading ? 0 : 1
-          }}
         />
       ) : (
         <span className={`text-white font-medium ${textSizes[size]} select-none`}>

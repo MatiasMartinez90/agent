@@ -31,7 +31,8 @@ class ImageCache {
 
   private cleanup(): void {
     const now = Date.now()
-    for (const [url, entry] of this.cache.entries()) {
+    const entries = Array.from(this.cache.entries())
+    for (const [url, entry] of entries) {
       if (now - entry.timestamp >= this.CACHE_DURATION) {
         this.cache.delete(url)
         URL.revokeObjectURL(URL.createObjectURL(entry.blob))
@@ -40,7 +41,8 @@ class ImageCache {
   }
 
   clear(): void {
-    for (const [, entry] of this.cache.entries()) {
+    const entries = Array.from(this.cache.entries())
+    for (const [, entry] of entries) {
       URL.revokeObjectURL(URL.createObjectURL(entry.blob))
     }
     this.cache.clear()
