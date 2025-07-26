@@ -19,7 +19,7 @@ const Home: NextPage = () => {
                   className="flex items-center hover:opacity-80 transition-opacity"
                 >
                   <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    Agent Platform
+                    RRHH Agent
                   </span>
                 </button>
               </div>
@@ -43,8 +43,9 @@ const Home: NextPage = () => {
         <div className="text-center">
           {/* Badge de AI */}
           <div className="flex justify-center mb-8">
-            <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-300 border border-blue-500/30 backdrop-blur-sm">
-              🤖 Powered by AI
+            <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-300 border border-orange-500/30 backdrop-blur-sm">
+              <img src="/anthropic-logo.svg" alt="Anthropic" className="w-4 h-4 mr-2" />
+              Powered by Anthropic
             </span>
           </div>
 
