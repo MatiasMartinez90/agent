@@ -30,11 +30,11 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
-        <title>RRHH Agent</title>
-        <meta name="description" content="Plataforma de entrevistas laborales con IA - Agent Platform" />
+        <title>Agent Platform - Entrevistas con IA</title>
+        <meta name="description" content="Plataforma de entrevistas laborales con IA - Proceso de selección automatizado" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="alternate icon" href="/favicon.ico" />
-        <meta name="theme-color" content="#6366f1" />
+        <meta name="theme-color" content="#3B82F6" />
       </Head>
 
       <Component {...pageProps} />

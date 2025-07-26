@@ -1,5 +1,6 @@
 import type { NextPage } from 'next'
 import Router from 'next/router'
+import HRIcon from '../components/HRIcon'
 
 const Home: NextPage = () => {
   const startProcess = () => {
@@ -16,11 +17,15 @@ const Home: NextPage = () => {
               <div className="flex-shrink-0">
                 <button 
                   onClick={() => Router.push('/')}
-                  className="flex items-center hover:opacity-80 transition-opacity"
+                  className="flex items-center hover:opacity-80 transition-opacity space-x-3"
                 >
-                  <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    RRHH Agent
-                  </span>
+                  <HRIcon size="lg" />
+                  <div className="flex flex-col items-start">
+                    <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                      Agent Platform
+                    </span>
+                    <span className="text-xs text-gray-400">Entrevistas con IA</span>
+                  </div>
                 </button>
               </div>
             </div>

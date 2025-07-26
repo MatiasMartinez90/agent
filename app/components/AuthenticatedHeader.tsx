@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import UserAvatar from './UserAvatar'
+import SmartUserAvatar from './SmartUserAvatar'
+import HRIcon from './HRIcon'
 
 interface AuthenticatedHeaderProps {
   user: any
@@ -82,10 +83,13 @@ export default function AuthenticatedHeader({ user, signOut }: AuthenticatedHead
             <div className="flex-shrink-0">
               <button 
                 onClick={() => router.push('/')}
-                className="flex items-center hover:opacity-80 transition-opacity"
+                className="flex items-center hover:opacity-80 transition-opacity space-x-3"
               >
-                <span className="text-2xl font-bold text-green-400">DemoApp</span>
-                <span className="ml-2 text-xs bg-red-500 text-white px-2 py-1 rounded uppercase font-bold">DEMO</span>
+                <HRIcon size="lg" />
+                <div className="flex flex-col items-start">
+                  <span className="text-lg font-bold text-white">Agent Platform</span>
+                  <span className="text-xs text-gray-400">Entrevistas con IA</span>
+                </div>
               </button>
             </div>
           </div>
@@ -97,11 +101,12 @@ export default function AuthenticatedHeader({ user, signOut }: AuthenticatedHead
               className="flex items-center space-x-2 p-2 rounded-xl hover:bg-slate-700/50 transition-all duration-200 group"
             >
               {/* User Avatar */}
-              <UserAvatar 
+              <SmartUserAvatar 
                 user={user} 
                 size="lg" 
                 showBorder={true}
                 borderColor="border-slate-600 group-hover:border-green-400/70 transition-colors"
+                priority="high"
               />
               
               {/* Dropdown Arrow - Hidden on mobile */}
@@ -164,11 +169,12 @@ export default function AuthenticatedHeader({ user, signOut }: AuthenticatedHead
             {/* User Info */}
             <div className="p-6 border-b border-slate-700">
               <div className="flex items-center space-x-4">
-                <UserAvatar 
+                <SmartUserAvatar 
                   user={user} 
                   size="xl" 
                   showBorder={true}
                   borderColor="border-green-400/30"
+                  priority="high"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="text-white font-semibold text-sm truncate">

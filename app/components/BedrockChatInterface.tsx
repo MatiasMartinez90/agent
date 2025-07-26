@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useBedrockChat, ChatMessage } from '../hooks/useBedrockChat'
-import UserAvatar from './UserAvatar'
+import SmartUserAvatar from './SmartUserAvatar'
 
 interface BedrockChatInterfaceProps {
   courseStep: number
@@ -17,7 +17,7 @@ const ChatMessageComponent = ({ message, user }: { message: ChatMessage; user?: 
       <div className={`flex items-start space-x-3 max-w-[80%] ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
         {/* Avatar */}
         {isUser ? (
-          <UserAvatar user={user} size="sm" />
+          <SmartUserAvatar user={user} size="sm" priority="normal" />
         ) : (
           <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-r from-green-500 to-emerald-500">
             <span className="text-white text-xs">🤖</span>

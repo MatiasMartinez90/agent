@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useImagePreloader } from '../hooks/useImagePreloader'
 
 interface UserAvatarProps {
   user: any
@@ -15,8 +16,6 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   showBorder = false,
   borderColor = 'border-slate-600'
 }) => {
-  const [imageError, setImageError] = useState(false)
-  const [imageLoading, setImageLoading] = useState(true)
 
   const sizeClasses = {
     xs: 'w-4 h-4',
@@ -34,51 +33,101 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     xl: 'text-lg'
   }
 
-  // Reset error state when user changes
-  useEffect(() => {
-    setImageError(false)
-    setImageLoading(true)
-  }, [user?.picture])
-
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    console.log('Error loading user image:', getUserPicture(), e)
-    setImageError(true)
-    setImageLoading(false)
-  }
-
-  const handleImageLoad = () => {
-    console.log('User image loaded successfully:', getUserPicture())
-    setImageLoading(false)
-  }
-
-  // Get user picture from different possible sources
-  const getUserPicture = () => {
-    // Try different sources for the picture
-    if (user?.picture) return user.picture
-    if (user?.signInUserSession?.idToken?.payload?.picture) return user.signInUserSession.idToken.payload.picture
-    if (user?.attributes?.picture) return user.attributes.picture
+  // Get user picture from different possible sources with fallbacks
+  const pictureUrl = useMemo(() => {
+    const sources = [
+      user?.picture,
+      user?.signInUserSession?.idToken?.payload?.picture,
+      user?.attributes?.picture,
+      // Try to get from localStorage as backup
+      (() => {
+        try {
+          if (typeof window === 'undefined') return null
+          const clientId = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_WEB_CLIENT_ID || '7ho22jco9j63c3hmsrsp4bj0ti'
+          const lastAuthUser = localStorage.getItem(`CognitoIdentityServiceProvider.${clientId}.LastAuthUser`)
+          if (lastAuthUser) {
+            const idTokenKey = `CognitoIdentityServiceProvider.${clientId}.${lastAuthUser}.idToken`
+            const token = localStorage.getItem(idTokenKey)
+            if (token) {
+              const payload = JSON.parse(atob(token.split('.')[1]))
+              return payload.picture
+            }
+          }
+        } catch (e) {
+          console.log('Could not get picture from localStorage:', e)
+        }
+        return null
+      })()
+    ]
+    
+    // Return first valid URL
+    for (const source of sources) {
+      if (source && typeof source === 'string' && source.trim().length > 0) {
+        // Ensure HTTPS and add size parameter for Google images
+        let url = source.trim()
+        if (url.includes('googleusercontent.com')) {
+          // Add size parameter for better loading and remove existing size params
+          url = url.replace(/=s\d+/, '') + '=s96'
+          // Ensure HTTPS
+          url = url.replace(/^http:/, 'https:')
+        }
+        return url
+      }
+    }
     return null
-  }
+  }, [user])
+
+  // Use the image preloader hook
+  const { loaded: imageLoaded, error: imageError, loading: imageLoading, retryCount, cachedUrl } = useImagePreloader(pictureUrl, {
+    maxRetries: 3,
+    retryDelay: 1000,
+    timeout: 8000,
+    useCache: true
+  })
+
+  // Use cached URL if available, otherwise fall back to original
+  const displayUrl = cachedUrl || pictureUrl
 
   // Get user name from different possible sources
-  const getUserName = () => {
-    if (user?.name) return user.name
-    if (user?.signInUserSession?.idToken?.payload?.name) return user.signInUserSession.idToken.payload.name
-    if (user?.attributes?.name) return user.attributes.name
-    if (user?.signInUserSession?.idToken?.payload?.given_name) return user.signInUserSession.idToken.payload.given_name
+  const getUserName = useCallback(() => {
+    const sources = [
+      user?.name,
+      user?.signInUserSession?.idToken?.payload?.name,
+      user?.attributes?.name,
+      user?.signInUserSession?.idToken?.payload?.given_name,
+      user?.signInUserSession?.idToken?.payload?.nickname,
+      // Combine given_name + family_name if available
+      user?.signInUserSession?.idToken?.payload?.given_name && user?.signInUserSession?.idToken?.payload?.family_name 
+        ? `${user.signInUserSession.idToken.payload.given_name} ${user.signInUserSession.idToken.payload.family_name}`
+        : null
+    ]
+    
+    for (const source of sources) {
+      if (source && typeof source === 'string' && source.trim().length > 0) {
+        return source.trim()
+      }
+    }
     return null
-  }
+  }, [user])
 
   // Get user email from different possible sources
-  const getUserEmail = () => {
-    if (user?.email) return user.email
-    if (user?.signInUserSession?.idToken?.payload?.email) return user.signInUserSession.idToken.payload.email
-    if (user?.attributes?.email) return user.attributes.email
+  const getUserEmail = useCallback(() => {
+    const sources = [
+      user?.email,
+      user?.signInUserSession?.idToken?.payload?.email,
+      user?.attributes?.email
+    ]
+    
+    for (const source of sources) {
+      if (source && typeof source === 'string' && source.trim().length > 0) {
+        return source.trim()
+      }
+    }
     return null
-  }
+  }, [user])
 
   // Get user initials as fallback
-  const getUserInitials = () => {
+  const getUserInitials = useCallback(() => {
     const name = getUserName()
     const email = getUserEmail()
     
@@ -94,47 +143,71 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       return email[0].toUpperCase()
     }
     return '👤'
-  }
+  }, [getUserName, getUserEmail])
 
-  const picture = getUserPicture()
   const name = getUserName()
   const email = getUserEmail()
+  const initials = getUserInitials()
 
-  // Debug logging
+  // Debug logging (only in development)
   useEffect(() => {
-    console.log('UserAvatar Debug:', {
-      user,
-      picture,
-      name,
-      email,
-      userKeys: user ? Object.keys(user) : 'no user',
-      tokenPayload: user?.signInUserSession?.idToken?.payload
-    })
-  }, [user, picture, name, email])
+    if (process.env.NODE_ENV === 'development') {
+      console.log('UserAvatar Debug:', {
+        user,
+        pictureUrl,
+        name,
+        email,
+        initials,
+        imageLoaded,
+        imageError,
+        imageLoading,
+        retryCount,
+        userKeys: user ? Object.keys(user) : 'no user',
+        tokenPayload: user?.signInUserSession?.idToken?.payload
+      })
+    }
+  }, [user, pictureUrl, name, email, initials, imageLoaded, imageError, imageLoading, retryCount])
 
   return (
     <div className={`${sizeClasses[size]} rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 relative ${showBorder ? `border-2 ${borderColor}` : ''} ${className}`}>
-      {picture && !imageError ? (
-        <>
-          <img 
-            src={picture} 
-            alt={name || email || 'Usuario'} 
-            className="w-full h-full object-cover rounded-full"
-            referrerPolicy="no-referrer"
-            onError={handleImageError}
-            onLoad={handleImageLoad}
-            style={{ display: imageLoading ? 'none' : 'block' }}
-          />
-          {imageLoading && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-            </div>
-          )}
-        </>
+      {displayUrl && imageLoaded && !imageError ? (
+        <img 
+          src={displayUrl} 
+          alt={name || email || 'Usuario'} 
+          className="w-full h-full object-cover rounded-full transition-opacity duration-200"
+          referrerPolicy="no-referrer"
+          crossOrigin="anonymous"
+          loading="eager"
+          draggable={false}
+          style={{ 
+            opacity: imageLoading ? 0 : 1
+          }}
+        />
       ) : (
-        <span className={`text-white font-medium ${textSizes[size]}`}>
-          {getUserInitials()}
+        <span className={`text-white font-medium ${textSizes[size]} select-none`}>
+          {initials}
         </span>
+      )}
+      
+      {/* Loading indicator */}
+      {imageLoading && pictureUrl && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-500">
+          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white opacity-70"></div>
+        </div>
+      )}
+      
+      {/* Error indicator for debugging */}
+      {process.env.NODE_ENV === 'development' && imageError && (
+        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
+          ❌
+        </div>
+      )}
+      
+      {/* Retry indicator for debugging */}
+      {process.env.NODE_ENV === 'development' && retryCount > 0 && (
+        <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
+          {retryCount}
+        </div>
       )}
     </div>
   )
