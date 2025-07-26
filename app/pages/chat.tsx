@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import useUser from '../lib/useUser'
 import Router from 'next/router'
 import UserAvatar from '../components/UserAvatar'
+import { useChatPersistence } from '../hooks/useChatPersistence'
 
 interface Message {
   id: string
@@ -13,20 +14,41 @@ interface Message {
 
 const Chat: NextPage = () => {
   const { user, loading, loggedOut, signOut } = useUser({ redirect: '/signin' })
+  const { messages, addMessage, isLoaded } = useChatPersistence()
+
+  // Helper functions to extract user data consistently
+  const getUserName = () => {
+    return user?.name || 
+           user?.signInUserSession?.idToken?.payload?.name || 
+           user?.attributes?.name || 
+           user?.signInUserSession?.idToken?.payload?.given_name || 
+           'Usuario'
+  }
+
+  const getUserEmail = () => {
+    return user?.email || 
+           user?.signInUserSession?.idToken?.payload?.email || 
+           user?.attributes?.email || 
+           ''
+  }
   
   // Debug: ver qué datos del usuario tenemos
   console.log('User data:', user)
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      content: '¡Hola! Soy tu asistente de entrevistas con IA. Te voy a hacer algunas preguntas para conocerte mejor. ¿A qué posición te estás postulando?',
-      isUser: false,
-      timestamp: new Date()
-    }
-  ])
+  console.log('User name sources:', {
+    direct: user?.name,
+    jwt: user?.signInUserSession?.idToken?.payload?.name,
+    attributes: user?.attributes?.name,
+    given_name: user?.signInUserSession?.idToken?.payload?.given_name
+  })
+  console.log('User email sources:', {
+    direct: user?.email,
+    jwt: user?.signInUserSession?.idToken?.payload?.email,
+    attributes: user?.attributes?.email
+  })
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -36,10 +58,27 @@ const Chat: NextPage = () => {
     scrollToBottom()
   }, [messages])
 
-  if (loading) {
+  // Auto-focus en el textarea cuando la página esté lista
+  useEffect(() => {
+    if (isLoaded && !loading && !loggedOut && textareaRef.current) {
+      // Pequeño delay para asegurar que todo esté renderizado
+      const timer = setTimeout(() => {
+        textareaRef.current?.focus()
+      }, 100)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [isLoaded, loading, loggedOut])
+
+  if (loading || !isLoaded) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Cargando...</div>
+        <div className="flex items-center space-x-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
+          <div className="text-white text-xl">
+            {loading ? 'Cargando usuario...' : 'Cargando conversación...'}
+          </div>
+        </div>
       </div>
     )
   }
@@ -55,14 +94,8 @@ const Chat: NextPage = () => {
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: inputMessage.trim(),
-      isUser: true,
-      timestamp: new Date()
-    }
-
-    setMessages(prev => [...prev, userMessage])
+    // Agregar mensaje del usuario usando el hook de persistencia
+    const userMessage = addMessage(inputMessage.trim(), true)
     setInputMessage('')
     setIsLoading(true)
 
@@ -71,9 +104,9 @@ const Chat: NextPage = () => {
       const n8nPayload = {
         message: inputMessage.trim(),
         user: {
-          email: user?.email || 'unknown@email.com',
-          name: user?.name || 'Usuario Anónimo',
-          picture: user?.picture || null
+          email: getUserEmail() || 'unknown@email.com',
+          name: getUserName(),
+          picture: user?.picture || user?.signInUserSession?.idToken?.payload?.picture || user?.attributes?.picture || null
         },
         chatHistory: messages.map(msg => ({
           content: msg.content,
@@ -118,29 +151,26 @@ const Chat: NextPage = () => {
         aiContent = responseText || aiContent
       }
       
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: aiContent,
-        isUser: false,
-        timestamp: new Date()
-      }
-      
-      setMessages(prev => [...prev, aiResponse])
+      // Agregar respuesta del agente usando el hook de persistencia
+      addMessage(aiContent, false)
       setIsLoading(false)
+
+      // Re-focus en el textarea después de recibir respuesta
+      setTimeout(() => {
+        textareaRef.current?.focus()
+      }, 100)
 
     } catch (error) {
       console.error('Error sending message to n8n:', error)
       
-      // Fallback response en caso de error
-      const errorResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: 'Disculpa, estoy teniendo problemas técnicos. Por favor intenta nuevamente en unos momentos.',
-        isUser: false,
-        timestamp: new Date()
-      }
-      
-      setMessages(prev => [...prev, errorResponse])
+      // Fallback response en caso de error usando el hook de persistencia
+      addMessage('Disculpa, estoy teniendo problemas técnicos. Por favor intenta nuevamente en unos momentos.', false)
       setIsLoading(false)
+
+      // Re-focus en el textarea después de error
+      setTimeout(() => {
+        textareaRef.current?.focus()
+      }, 100)
     }
   }
 
@@ -168,8 +198,8 @@ const Chat: NextPage = () => {
           
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <p className="text-white text-sm font-medium">{user?.name || 'Usuario'}</p>
-              <p className="text-slate-400 text-xs">{user?.email}</p>
+              <p className="text-white text-sm font-medium">{getUserName()}</p>
+              <p className="text-slate-400 text-xs">{getUserEmail()}</p>
             </div>
             <UserAvatar user={user} size="md" />
             <button
@@ -246,6 +276,7 @@ const Chat: NextPage = () => {
           <div className="flex items-end space-x-3">
             <div className="flex-1">
               <textarea
+                ref={textareaRef}
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
