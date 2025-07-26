@@ -18,11 +18,31 @@ const Chat: NextPage = () => {
 
   // Helper functions to extract user data consistently
   const getUserName = () => {
-    return user?.name || 
-           user?.signInUserSession?.idToken?.payload?.name || 
-           user?.attributes?.name || 
-           user?.signInUserSession?.idToken?.payload?.given_name || 
-           'Usuario'
+    // Intentar múltiples fuentes de datos para el nombre
+    const sources = [
+      user?.name,
+      user?.signInUserSession?.idToken?.payload?.name,
+      user?.attributes?.name,
+      user?.signInUserSession?.idToken?.payload?.given_name,
+      user?.signInUserSession?.idToken?.payload?.nickname,
+      // Combinar given_name + family_name si están disponibles
+      user?.signInUserSession?.idToken?.payload?.given_name && user?.signInUserSession?.idToken?.payload?.family_name 
+        ? `${user.signInUserSession.idToken.payload.given_name} ${user.signInUserSession.idToken.payload.family_name}`
+        : null,
+      // Extraer nombre del email como último recurso
+      user?.email ? user.email.split('@')[0] : null,
+      user?.signInUserSession?.idToken?.payload?.email ? user.signInUserSession.idToken.payload.email.split('@')[0] : null
+    ]
+    
+    // Retornar la primera fuente que tenga un valor válido
+    for (const source of sources) {
+      if (source && typeof source === 'string' && source.trim().length > 0) {
+        console.log('Using name source:', source)
+        return source.trim()
+      }
+    }
+    
+    return 'Usuario'
   }
 
   const getUserEmail = () => {
@@ -33,18 +53,31 @@ const Chat: NextPage = () => {
   }
   
   // Debug: ver qué datos del usuario tenemos
-  console.log('User data:', user)
+  console.log('=== USER DEBUG INFO ===')
+  console.log('Full user object:', user)
+  console.log('User keys:', user ? Object.keys(user) : 'no user')
+  
+  if (user?.signInUserSession?.idToken?.payload) {
+    console.log('JWT Payload:', user.signInUserSession.idToken.payload)
+    console.log('JWT Payload keys:', Object.keys(user.signInUserSession.idToken.payload))
+  }
+  
+  if (user?.attributes) {
+    console.log('User attributes:', user.attributes)
+    console.log('Attributes keys:', Object.keys(user.attributes))
+  }
+  
   console.log('User name sources:', {
     direct: user?.name,
     jwt: user?.signInUserSession?.idToken?.payload?.name,
     attributes: user?.attributes?.name,
-    given_name: user?.signInUserSession?.idToken?.payload?.given_name
+    given_name: user?.signInUserSession?.idToken?.payload?.given_name,
+    family_name: user?.signInUserSession?.idToken?.payload?.family_name,
+    nickname: user?.signInUserSession?.idToken?.payload?.nickname
   })
-  console.log('User email sources:', {
-    direct: user?.email,
-    jwt: user?.signInUserSession?.idToken?.payload?.email,
-    attributes: user?.attributes?.email
-  })
+  
+  console.log('Final getUserName() result:', getUserName())
+  console.log('========================')
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -58,17 +91,75 @@ const Chat: NextPage = () => {
     scrollToBottom()
   }, [messages])
 
+  // Auto-focus cuando el componente se monta completamente
+  useEffect(() => {
+    // Este useEffect se ejecuta solo una vez al montar el componente
+    const timer = setTimeout(() => {
+      if (textareaRef.current && !loading && !loggedOut) {
+        textareaRef.current.focus()
+        console.log('Auto-focus applied on component mount')
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, []) // Array vacío = solo se ejecuta al montar
+
+  // Auto-focus cuando la ventana recibe focus (usuario vuelve a la pestaña)
+  useEffect(() => {
+    const handleWindowFocus = () => {
+      if (textareaRef.current && !loading && !loggedOut && !isLoading) {
+        setTimeout(() => {
+          textareaRef.current?.focus()
+          console.log('Auto-focus applied on window focus')
+        }, 100)
+      }
+    }
+
+    window.addEventListener('focus', handleWindowFocus)
+    return () => window.removeEventListener('focus', handleWindowFocus)
+  }, [loading, loggedOut, isLoading])
+
   // Auto-focus en el textarea cuando la página esté lista
   useEffect(() => {
-    if (isLoaded && !loading && !loggedOut && textareaRef.current) {
-      // Pequeño delay para asegurar que todo esté renderizado
+    if (isLoaded && !loading && !loggedOut) {
+      // Múltiples intentos con delays incrementales para asegurar que funcione
+      const focusTextarea = () => {
+        if (textareaRef.current) {
+          textareaRef.current.focus()
+          console.log('Auto-focus applied to textarea')
+          return true
+        }
+        return false
+      }
+
+      // Primer intento inmediato
+      if (!focusTextarea()) {
+        // Segundo intento con delay corto
+        const timer1 = setTimeout(() => {
+          if (!focusTextarea()) {
+            // Tercer intento con delay más largo
+            const timer2 = setTimeout(() => {
+              focusTextarea()
+            }, 500)
+            return () => clearTimeout(timer2)
+          }
+        }, 100)
+        return () => clearTimeout(timer1)
+      }
+    }
+  }, [isLoaded, loading, loggedOut])
+
+  // Auto-focus adicional cuando el textarea ref cambia
+  useEffect(() => {
+    if (textareaRef.current && isLoaded && !loading && !loggedOut) {
       const timer = setTimeout(() => {
         textareaRef.current?.focus()
-      }, 100)
+        console.log('Auto-focus applied on textarea ref change')
+      }, 200)
       
       return () => clearTimeout(timer)
     }
-  }, [isLoaded, loading, loggedOut])
+  }, [textareaRef.current, isLoaded, loading, loggedOut])
 
   if (loading || !isLoaded) {
     return (
