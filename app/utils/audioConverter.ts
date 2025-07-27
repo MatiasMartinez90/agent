@@ -17,8 +17,6 @@ export interface AudioConversionResult {
 export async function convertAudioForPlayback(audioBlob: Blob): Promise<AudioConversionResult> {
   const originalType = audioBlob.type
   
-  console.log('Skipping audio conversion, using original format for better compatibility')
-  
   // Always return original audio without conversion
   // Modern browsers support WebM/Opus natively
   try {
@@ -32,8 +30,6 @@ export async function convertAudioForPlayback(audioBlob: Blob): Promise<AudioCon
       success: true
     }
   } catch (error) {
-    console.error('Failed to create audio URL:', error)
-    
     return {
       blob: audioBlob,
       url: '',

@@ -31,12 +31,6 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
     let cleanup: (() => void) | null = null
     
     if (audioBlob && audioBlob.size > 0) {
-      console.log('Processing audio blob:', {
-        size: audioBlob.size,
-        type: audioBlob.type,
-        constructor: audioBlob.constructor.name
-      })
-      
       setIsConverting(true)
       setConversionError(null)
       
@@ -44,16 +38,8 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         .then((result) => {
           if (result.success) {
             setAudioSrc(result.url)
-            console.log('Audio conversion result:', {
-              originalType: result.originalType,
-              convertedType: result.convertedType,
-              url: result.url,
-              size: result.blob.size
-            })
-            
             cleanup = () => {
               URL.revokeObjectURL(result.url)
-              console.log('Audio blob URL revoked:', result.url)
             }
           } else {
             setConversionError(result.error || 'Audio conversion failed')
@@ -69,15 +55,8 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         })
     } else if (audioUrl) {
       setAudioSrc(audioUrl)
-      console.log('Using provided audio URL:', audioUrl)
     } else {
       setAudioSrc(null)
-      console.log('No audio source available', {
-        hasBlob: !!audioBlob,
-        blobSize: audioBlob?.size,
-        hasUrl: !!audioUrl,
-        blobType: audioBlob?.type
-      })
     }
     
     return () => {
@@ -134,8 +113,7 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
           // Wait for audio to be ready
           const playWhenReady = () => {
             audio.removeEventListener('canplay', playWhenReady)
-            audio.play().catch(error => {
-              console.error('Error playing audio:', error)
+            audio.play().catch(() => {
               setConversionError('Playback failed')
             })
           }
@@ -144,7 +122,6 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         }
       }
     } catch (error) {
-      console.error('Error in togglePlayback:', error)
       setConversionError('Playback failed')
     } finally {
       setTimeout(() => setIsToggling(false), 100) // Prevent rapid clicks
@@ -171,19 +148,8 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
           ref={audioRef} 
           preload="metadata"
           controls={false}
-          onError={(e) => {
-            console.error('Audio element error:', e)
-            console.log('Failed audio src:', audioSrc)
+          onError={() => {
             setConversionError('Audio playback failed')
-          }}
-          onLoadedData={() => {
-            console.log('Audio loaded successfully:', audioSrc)
-          }}
-          onCanPlay={() => {
-            console.log('Audio can play:', audioSrc)
-          }}
-          onLoadStart={() => {
-            console.log('Audio load started:', audioSrc)
           }}
         >
           <source src={audioSrc} type="audio/webm" />
@@ -271,26 +237,6 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         </div>
       )}
 
-      {/* Debug: Test direct audio */}
-      {process.env.NODE_ENV === 'development' && audioBlob && (
-        <button
-          onClick={() => {
-            console.log('Testing direct audio playback')
-            const testAudio = new Audio()
-            const testUrl = URL.createObjectURL(audioBlob)
-            testAudio.src = testUrl
-            testAudio.play().catch(error => {
-              console.error('Direct audio test failed:', error)
-            })
-            testAudio.onended = () => {
-              URL.revokeObjectURL(testUrl)
-            }
-          }}
-          className="text-xs px-1 py-0.5 bg-red-500 text-white rounded"
-        >
-          🧪
-        </button>
-      )}
     </div>
   )
 }

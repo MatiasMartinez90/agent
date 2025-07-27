@@ -90,7 +90,6 @@ export const useVoiceRecording = (options: UseVoiceRecordingOptions = {}) => {
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data)
-          console.log('Audio chunk received:', event.data.size, 'bytes')
         }
       }
 
@@ -100,20 +99,11 @@ export const useVoiceRecording = (options: UseVoiceRecordingOptions = {}) => {
           type: mediaRecorder.mimeType 
         })
         
-        console.log('Audio recording completed:', {
-          blobSize: audioBlob.size,
-          blobType: audioBlob.type,
-          chunks: chunksRef.current.length,
-          duration: state.duration,
-          mimeType: mediaRecorder.mimeType
-        })
-        
         // Validate blob before calling callback
         if (audioBlob.size > 0) {
           const duration = state.duration
           onRecordingComplete?.(audioBlob, duration)
         } else {
-          console.error('Audio blob is empty!')
           onError?.('Recording failed: no audio data captured')
         }
         

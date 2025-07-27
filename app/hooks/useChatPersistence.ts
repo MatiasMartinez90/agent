@@ -144,13 +144,6 @@ export const useChatPersistence = () => {
         // Convertir audioBlob a base64 si existe
         if (msg.voiceData?.audioBlob) {
           try {
-            console.log('Converting blob to base64:', {
-              blobType: typeof msg.voiceData.audioBlob,
-              isBlob: msg.voiceData.audioBlob instanceof Blob,
-              blobSize: msg.voiceData.audioBlob?.size,
-              blobConstructor: msg.voiceData.audioBlob?.constructor?.name
-            })
-            
             const base64 = await blobToBase64(msg.voiceData.audioBlob)
             messageForStorage.voiceData = {
               ...msg.voiceData,
@@ -160,7 +153,6 @@ export const useChatPersistence = () => {
             }
           } catch (error) {
             console.error('Error converting blob to base64:', error)
-            console.error('Problematic blob:', msg.voiceData.audioBlob)
             // Keep voiceData without blob if conversion fails
             messageForStorage.voiceData = {
               ...msg.voiceData,
