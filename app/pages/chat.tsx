@@ -214,6 +214,18 @@ const Chat: NextPage = () => {
       blobInstanceOfBlob: audioBlob instanceof Blob
     })
     
+    // Check if browser supports this audio format
+    const audio = document.createElement('audio')
+    const formatSupport = {
+      webm: audio.canPlayType('audio/webm'),
+      webmOpus: audio.canPlayType('audio/webm; codecs="opus"'),
+      webmVorbis: audio.canPlayType('audio/webm; codecs="vorbis"'),
+      mp4: audio.canPlayType('audio/mp4'),
+      wav: audio.canPlayType('audio/wav'),
+      ogg: audio.canPlayType('audio/ogg')
+    }
+    console.log('Browser audio format support:', formatSupport)
+    
     // Test if we can create URL from blob
     try {
       const testUrl = URL.createObjectURL(audioBlob)

@@ -202,8 +202,19 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         controls={false}
         style={{ display: 'none' }}
         onError={(e) => {
-          console.error('Audio element error event:', e.currentTarget.error)
-          setConversionError('Audio playback failed')
+          const error = e.currentTarget.error
+          console.error('=== AUDIO MEDIA ERROR ===')
+          console.error('Error object:', error)
+          console.error('Error code:', error?.code)
+          console.error('Error message:', error?.message)
+          console.error('Error codes reference:', {
+            1: 'MEDIA_ERR_ABORTED',
+            2: 'MEDIA_ERR_NETWORK', 
+            3: 'MEDIA_ERR_DECODE',
+            4: 'MEDIA_ERR_SRC_NOT_SUPPORTED'
+          })
+          console.error('Current audio src:', e.currentTarget.src)
+          setConversionError(`Audio error: ${error?.code} - ${error?.message || 'Unknown error'}`)
         }}
         onLoadStart={() => console.log('Audio loadstart event')}
         onCanPlay={() => console.log('Audio canplay event')}
