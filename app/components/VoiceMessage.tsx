@@ -80,6 +80,24 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
     }
   }, [audioBlob, audioUrl])
 
+  // Update audio src when audioSrc changes
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    console.log('=== UPDATING AUDIO SRC ===')
+    console.log('Setting audio.src to:', audioSrc || 'empty')
+    
+    if (audioSrc) {
+      audio.src = audioSrc
+      audio.load() // Force reload
+      console.log('Audio src set and load() called')
+    } else {
+      audio.src = ''
+      console.log('Audio src cleared')
+    }
+  }, [audioSrc])
+
   // Handle audio events
   useEffect(() => {
     const audio = audioRef.current
@@ -176,22 +194,22 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
         : 'bg-slate-700 text-gray-100 border border-slate-600'
     } ${className}`}>
-      {/* Audio element with error handling */}
-      {audioSrc && !isConverting && (
-        <audio 
-          ref={audioRef} 
-          preload="metadata"
-          controls={false}
-          onError={() => {
-            setConversionError('Audio playback failed')
-          }}
-        >
-          <source src={audioSrc} type="audio/webm" />
-          <source src={audioSrc} type="audio/mp4" />
-          <source src={audioSrc} type="audio/wav" />
-          Your browser does not support the audio element.
-        </audio>
-      )}
+      {/* Audio element with error handling - Always render for ref access */}
+      <audio 
+        ref={audioRef} 
+        src={audioSrc || ''}
+        preload="metadata"
+        controls={false}
+        style={{ display: 'none' }}
+        onError={(e) => {
+          console.error('Audio element error event:', e.currentTarget.error)
+          setConversionError('Audio playback failed')
+        }}
+        onLoadStart={() => console.log('Audio loadstart event')}
+        onCanPlay={() => console.log('Audio canplay event')}
+        onLoadedData={() => console.log('Audio loadeddata event')}
+        onLoadedMetadata={() => console.log('Audio loadedmetadata event')}
+      />
 
       {/* Play/Pause button */}
       <button
