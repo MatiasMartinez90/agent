@@ -139,9 +139,11 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         <audio 
           ref={audioRef} 
           preload="metadata"
+          controls={false}
           onError={(e) => {
             console.error('Audio element error:', e)
             console.log('Failed audio src:', audioSrc)
+            setConversionError('Audio playback failed')
           }}
           onLoadedData={() => {
             console.log('Audio loaded successfully:', audioSrc)
@@ -149,8 +151,13 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
           onCanPlay={() => {
             console.log('Audio can play:', audioSrc)
           }}
+          onLoadStart={() => {
+            console.log('Audio load started:', audioSrc)
+          }}
         >
-          <source src={audioSrc} />
+          <source src={audioSrc} type="audio/webm" />
+          <source src={audioSrc} type="audio/mp4" />
+          <source src={audioSrc} type="audio/wav" />
           Your browser does not support the audio element.
         </audio>
       )}
