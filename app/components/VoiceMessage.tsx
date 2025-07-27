@@ -41,6 +41,33 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
       isUser: isUser
     })
     
+    // Additional blob analysis
+    if (audioBlob) {
+      console.log('=== AUDIO BLOB ANALYSIS ===')
+      console.log('Blob type from MediaRecorder:', audioBlob.type)
+      console.log('Blob size:', audioBlob.size, 'bytes')
+      console.log('Blob constructor:', audioBlob.constructor.name)
+      
+      // Try to read first few bytes to check format
+      if (audioBlob.size > 0) {
+        audioBlob.slice(0, 20).arrayBuffer().then(buffer => {
+          const bytes = new Uint8Array(buffer)
+          const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ')
+          console.log('First 20 bytes (hex):', hex)
+          
+          // Check for common audio file signatures
+          const signatures = {
+            'WebM': bytes[0] === 0x1A && bytes[1] === 0x45 && bytes[2] === 0xDF && bytes[3] === 0xA3,
+            'MP4': (bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) || // ftyp
+                   (bytes[0] === 0x00 && bytes[1] === 0x00 && bytes[2] === 0x00 && bytes[3] === 0x20), // typical MP4 start
+            'WAV': bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46, // RIFF
+            'OGG': bytes[0] === 0x4F && bytes[1] === 0x67 && bytes[2] === 0x67 && bytes[3] === 0x53  // OggS
+          }
+          console.log('File format signatures detected:', signatures)
+        }).catch(e => console.error('Failed to read blob bytes:', e))
+      }
+    }
+    
     if (audioBlob && audioBlob.size > 0) {
       console.log('Starting audio conversion...')
       setIsConverting(true)
