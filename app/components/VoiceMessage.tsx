@@ -30,6 +30,12 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
     let cleanup: (() => void) | null = null
     
     if (audioBlob && audioBlob.size > 0) {
+      console.log('Processing audio blob:', {
+        size: audioBlob.size,
+        type: audioBlob.type,
+        constructor: audioBlob.constructor.name
+      })
+      
       setIsConverting(true)
       setConversionError(null)
       
@@ -68,7 +74,8 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
       console.log('No audio source available', {
         hasBlob: !!audioBlob,
         blobSize: audioBlob?.size,
-        hasUrl: !!audioUrl
+        hasUrl: !!audioUrl,
+        blobType: audioBlob?.type
       })
     }
     
