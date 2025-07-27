@@ -23,6 +23,7 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
   const [audioSrc, setAudioSrc] = useState<string | null>(null)
   const [isConverting, setIsConverting] = useState(false)
   const [conversionError, setConversionError] = useState<string | null>(null)
+  const [isToggling, setIsToggling] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
   // Create audio URL from blob or use provided URL with conversion
@@ -116,14 +117,37 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
     }
   }, [audioSrc])
 
-  const togglePlayback = () => {
+  const togglePlayback = async () => {
     const audio = audioRef.current
-    if (!audio) return
+    if (!audio || !audioSrc || isToggling) return
 
-    if (isPlaying) {
-      audio.pause()
-    } else {
-      audio.play()
+    setIsToggling(true)
+    
+    try {
+      if (isPlaying) {
+        audio.pause()
+      } else {
+        // Ensure audio is ready before playing
+        if (audio.readyState >= 2) { // HAVE_CURRENT_DATA
+          await audio.play()
+        } else {
+          // Wait for audio to be ready
+          const playWhenReady = () => {
+            audio.removeEventListener('canplay', playWhenReady)
+            audio.play().catch(error => {
+              console.error('Error playing audio:', error)
+              setConversionError('Playback failed')
+            })
+          }
+          audio.addEventListener('canplay', playWhenReady)
+          audio.load() // Force reload if needed
+        }
+      }
+    } catch (error) {
+      console.error('Error in togglePlayback:', error)
+      setConversionError('Playback failed')
+    } finally {
+      setTimeout(() => setIsToggling(false), 100) // Prevent rapid clicks
     }
   }
 
@@ -172,7 +196,7 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
       {/* Play/Pause button */}
       <button
         onClick={togglePlayback}
-        disabled={!audioSrc || isConverting}
+        disabled={!audioSrc || isConverting || isToggling}
         className={`p-2 rounded-full transition-colors ${
           isUser
             ? 'bg-white/20 hover:bg-white/30 text-white'
@@ -245,6 +269,27 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         <div className={`text-xs ${isUser ? 'text-red-200' : 'text-red-400'}`} title={conversionError}>
           ⚠️
         </div>
+      )}
+
+      {/* Debug: Test direct audio */}
+      {process.env.NODE_ENV === 'development' && audioBlob && (
+        <button
+          onClick={() => {
+            console.log('Testing direct audio playback')
+            const testAudio = new Audio()
+            const testUrl = URL.createObjectURL(audioBlob)
+            testAudio.src = testUrl
+            testAudio.play().catch(error => {
+              console.error('Direct audio test failed:', error)
+            })
+            testAudio.onended = () => {
+              URL.revokeObjectURL(testUrl)
+            }
+          }}
+          className="text-xs px-1 py-0.5 bg-red-500 text-white rounded"
+        >
+          🧪
+        </button>
       )}
     </div>
   )
