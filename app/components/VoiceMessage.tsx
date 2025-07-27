@@ -79,6 +79,7 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
           if (result.success) {
             console.log('Audio conversion successful, URL:', result.url.substring(0, 50) + '...')
             setAudioSrc(result.url)
+            setConversionError(null) // Clear any previous errors on success
             cleanup = () => {
               URL.revokeObjectURL(result.url)
             }
