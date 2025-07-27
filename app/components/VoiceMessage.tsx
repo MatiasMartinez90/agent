@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { convertAudioForPlayback } from '../utils/audioConverter'
 
 interface VoiceMessageProps {
   audioBlob?: Blob
@@ -20,41 +21,45 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [audioSrc, setAudioSrc] = useState<string | null>(null)
+  const [isConverting, setIsConverting] = useState(false)
+  const [conversionError, setConversionError] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
 
-  // Create audio URL from blob or use provided URL
+  // Create audio URL from blob or use provided URL with conversion
   useEffect(() => {
+    let cleanup: (() => void) | null = null
+    
     if (audioBlob && audioBlob.size > 0) {
-      try {
-        // Validate audio blob
-        const validTypes = ['audio/webm', 'audio/mp4', 'audio/wav', 'audio/ogg']
-        const isValidType = validTypes.some(type => audioBlob.type.includes(type.split('/')[1]))
-        
-        if (!isValidType) {
-          console.warn('Audio blob type not supported:', audioBlob.type)
-          console.log('Supported types:', validTypes)
-        }
-        
-        const url = URL.createObjectURL(audioBlob)
-        setAudioSrc(url)
-        console.log('Audio blob URL created:', {
-          url: url,
-          size: audioBlob.size,
-          type: audioBlob.type,
-          isValidType: isValidType
+      setIsConverting(true)
+      setConversionError(null)
+      
+      convertAudioForPlayback(audioBlob)
+        .then((result) => {
+          if (result.success) {
+            setAudioSrc(result.url)
+            console.log('Audio conversion result:', {
+              originalType: result.originalType,
+              convertedType: result.convertedType,
+              url: result.url,
+              size: result.blob.size
+            })
+            
+            cleanup = () => {
+              URL.revokeObjectURL(result.url)
+              console.log('Audio blob URL revoked:', result.url)
+            }
+          } else {
+            setConversionError(result.error || 'Audio conversion failed')
+            console.error('Audio conversion failed:', result.error)
+          }
         })
-        
-        return () => {
-          URL.revokeObjectURL(url)
-          console.log('Audio blob URL revoked:', url)
-        }
-      } catch (error) {
-        console.error('Error creating audio URL from blob:', error, {
-          blobSize: audioBlob.size,
-          blobType: audioBlob.type
+        .catch((error) => {
+          setConversionError(`Conversion error: ${error.message}`)
+          console.error('Audio conversion error:', error)
         })
-        setAudioSrc(null)
-      }
+        .finally(() => {
+          setIsConverting(false)
+        })
     } else if (audioUrl) {
       setAudioSrc(audioUrl)
       console.log('Using provided audio URL:', audioUrl)
@@ -65,6 +70,12 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         blobSize: audioBlob?.size,
         hasUrl: !!audioUrl
       })
+    }
+    
+    return () => {
+      if (cleanup) {
+        cleanup()
+      }
     }
   }, [audioBlob, audioUrl])
 
@@ -124,7 +135,7 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         : 'bg-slate-700 text-gray-100 border border-slate-600'
     } ${className}`}>
       {/* Audio element with error handling */}
-      {audioSrc && (
+      {audioSrc && !isConverting && (
         <audio 
           ref={audioRef} 
           preload="metadata"
@@ -135,6 +146,9 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
           onLoadedData={() => {
             console.log('Audio loaded successfully:', audioSrc)
           }}
+          onCanPlay={() => {
+            console.log('Audio can play:', audioSrc)
+          }}
         >
           <source src={audioSrc} />
           Your browser does not support the audio element.
@@ -144,14 +158,18 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
       {/* Play/Pause button */}
       <button
         onClick={togglePlayback}
-        disabled={!audioSrc}
+        disabled={!audioSrc || isConverting}
         className={`p-2 rounded-full transition-colors ${
           isUser
             ? 'bg-white/20 hover:bg-white/30 text-white'
             : 'bg-slate-600 hover:bg-slate-500 text-gray-300'
         } disabled:opacity-50 disabled:cursor-not-allowed`}
       >
-        {isPlaying ? (
+        {isConverting ? (
+          <svg className="w-4 h-4 animate-spin" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.364-7.364l-2.828 2.828M9.464 18.536l-2.828 2.828m12.728 0l-2.828-2.828M9.464 5.464L6.636 2.636"/>
+          </svg>
+        ) : isPlaying ? (
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
             <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
           </svg>
@@ -207,6 +225,13 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
       <div className={`text-xs ${isUser ? 'text-white/50' : 'text-gray-500'}`}>
         {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </div>
+
+      {/* Error indicator */}
+      {conversionError && (
+        <div className={`text-xs ${isUser ? 'text-red-200' : 'text-red-400'}`} title={conversionError}>
+          ⚠️
+        </div>
+      )}
     </div>
   )
 }
