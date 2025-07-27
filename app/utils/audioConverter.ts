@@ -17,91 +17,30 @@ export interface AudioConversionResult {
 export async function convertAudioForPlayback(audioBlob: Blob): Promise<AudioConversionResult> {
   const originalType = audioBlob.type
   
+  console.log('Skipping audio conversion, using original format for better compatibility')
+  
+  // Always return original audio without conversion
+  // Modern browsers support WebM/Opus natively
   try {
-    // If it's already a compatible format, return as-is
-    if (!originalType.includes('webm') || !originalType.includes('opus')) {
-      const url = URL.createObjectURL(audioBlob)
-      return {
-        blob: audioBlob,
-        url,
-        originalType,
-        convertedType: originalType,
-        success: true
-      }
-    }
-
-    console.log('Converting WebM/Opus audio for better compatibility...')
-
-    // Create audio context
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-    
-    // Convert blob to array buffer
-    const arrayBuffer = await audioBlob.arrayBuffer()
-    
-    // Decode audio data
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-    
-    // Create a new audio buffer with the decoded data
-    const numberOfChannels = audioBuffer.numberOfChannels
-    const sampleRate = audioBuffer.sampleRate
-    const length = audioBuffer.length
-    
-    // Create offline context for rendering
-    const offlineContext = new OfflineAudioContext(numberOfChannels, length, sampleRate)
-    
-    // Create buffer source
-    const source = offlineContext.createBufferSource()
-    source.buffer = audioBuffer
-    source.connect(offlineContext.destination)
-    source.start(0)
-    
-    // Render the audio
-    const renderedBuffer = await offlineContext.startRendering()
-    
-    // Convert back to blob using a more compatible format
-    const convertedBlob = await audioBufferToBlob(renderedBuffer)
-    const url = URL.createObjectURL(convertedBlob)
-    
-    console.log('Audio conversion successful:', {
-      originalSize: audioBlob.size,
-      convertedSize: convertedBlob.size,
-      originalType,
-      convertedType: convertedBlob.type
-    })
+    const url = URL.createObjectURL(audioBlob)
     
     return {
-      blob: convertedBlob,
+      blob: audioBlob,
       url,
       originalType,
-      convertedType: convertedBlob.type,
+      convertedType: originalType,
       success: true
     }
-    
   } catch (error) {
-    console.error('Audio conversion failed:', error)
+    console.error('Failed to create audio URL:', error)
     
-    // Fallback: try to create URL with modified MIME type
-    try {
-      const fallbackBlob = new Blob([audioBlob], { type: 'audio/webm' })
-      const url = URL.createObjectURL(fallbackBlob)
-      
-      return {
-        blob: fallbackBlob,
-        url,
-        originalType,
-        convertedType: 'audio/webm',
-        success: true,
-        error: `Conversion failed, using fallback: ${error}`
-      }
-    } catch (fallbackError) {
-      return {
-        blob: audioBlob,
-        url: '',
-        originalType,
-        convertedType: originalType,
-        success: false,
-        error: `Both conversion and fallback failed: ${error}`
-      }
+    return {
+      blob: audioBlob,
+      url: '',
+      originalType,
+      convertedType: originalType,
+      success: false,
+      error: `Failed to create audio URL: ${error}`
     }
   }
 }
