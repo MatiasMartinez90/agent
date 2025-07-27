@@ -57,30 +57,52 @@ export const useVoiceRecording = (options: UseVoiceRecordingOptions = {}) => {
       // Detect mobile for optimized settings
       const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
       
-      // Request microphone access with mobile-optimized settings
+      // Request microphone access with conservative settings for better compatibility
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: isMobile ? 22050 : 44100, // Lower quality on mobile for performance
-          channelCount: 1 // Mono for smaller file size
+          sampleRate: 44100, // Standard CD quality
+          channelCount: 1, // Mono for smaller file size
+          // Remove mobile-specific constraints that might cause issues
+          ...(isMobile ? {
+            latency: 0.1, // Lower latency on mobile
+            volume: 1.0
+          } : {})
         } 
       })
       
       streamRef.current = stream
       chunksRef.current = []
 
-      // Create MediaRecorder with mobile-compatible format detection
+      // Create MediaRecorder with better compatibility priority
       let mimeType = 'audio/webm'
       
-      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-        mimeType = 'audio/webm;codecs=opus'
-      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-        mimeType = 'audio/mp4' // Safari fallback
-      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-        mimeType = 'audio/webm'
+      console.log('=== MEDIARECORDER MIME TYPE DETECTION ===')
+      const supportedTypes = {
+        'audio/mp4': MediaRecorder.isTypeSupported('audio/mp4'),
+        'audio/webm': MediaRecorder.isTypeSupported('audio/webm'),
+        'audio/webm;codecs=opus': MediaRecorder.isTypeSupported('audio/webm;codecs=opus'),
+        'audio/webm;codecs=vp8': MediaRecorder.isTypeSupported('audio/webm;codecs=vp8'),
+        'audio/ogg': MediaRecorder.isTypeSupported('audio/ogg'),
+        'audio/wav': MediaRecorder.isTypeSupported('audio/wav')
       }
+      console.log('Supported mime types:', supportedTypes)
+      
+      // Priority: MP4 > basic WebM > WebM+Opus (due to current compatibility issues)
+      if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4' // Most compatible format
+        console.log('Using audio/mp4 (highest compatibility)')
+      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        mimeType = 'audio/webm' // Basic WebM without specific codec
+        console.log('Using basic audio/webm')
+      } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        mimeType = 'audio/webm;codecs=opus' // Last resort due to current issues
+        console.log('Using audio/webm;codecs=opus (fallback)')
+      }
+      
+      console.log('Selected mime type:', mimeType)
       
       const mediaRecorder = new MediaRecorder(stream, { mimeType })
       
