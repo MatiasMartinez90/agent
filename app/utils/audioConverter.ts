@@ -25,16 +25,76 @@ export async function convertAudioForPlayback(audioBlob: Blob): Promise<AudioCon
     hasStream: typeof audioBlob.stream === 'function'
   })
   
-  // Always return original audio without conversion
-  // Modern browsers support WebM/Opus natively
+  // Convert WebM/Opus to WAV using Web Audio API for better compatibility
+  if (originalType.includes('webm') || originalType.includes('opus')) {
+    console.log('Converting WebM/Opus to WAV for better compatibility...')
+    
+    try {
+      // Create audio context
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      
+      // Get array buffer from blob
+      const arrayBuffer = await audioBlob.arrayBuffer()
+      console.log('Got ArrayBuffer:', arrayBuffer.byteLength, 'bytes')
+      
+      // Decode audio data
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+      console.log('Decoded audio:', {
+        sampleRate: audioBuffer.sampleRate,
+        duration: audioBuffer.duration,
+        numberOfChannels: audioBuffer.numberOfChannels,
+        length: audioBuffer.length
+      })
+      
+      // Convert to WAV
+      const wavBlob = await audioBufferToBlob(audioBuffer)
+      console.log('Converted to WAV:', wavBlob.size, 'bytes')
+      
+      // Create URL for WAV
+      const url = URL.createObjectURL(wavBlob)
+      console.log('Created WAV URL:', url.substring(0, 50) + '...')
+      
+      // Close audio context to free resources
+      audioContext.close()
+      
+      return {
+        blob: wavBlob,
+        url,
+        originalType,
+        convertedType: 'audio/wav',
+        success: true
+      }
+    } catch (error) {
+      console.error('WAV conversion failed:', error)
+      console.log('Fallback: trying original blob...')
+      
+      // Fallback to original if conversion fails
+      try {
+        const url = URL.createObjectURL(audioBlob)
+        return {
+          blob: audioBlob,
+          url,
+          originalType,
+          convertedType: originalType,
+          success: true
+        }
+      } catch (fallbackError) {
+        return {
+          blob: audioBlob,
+          url: '',
+          originalType,
+          convertedType: originalType,
+          success: false,
+          error: `Conversion failed: ${error}. Fallback failed: ${fallbackError}`
+        }
+      }
+    }
+  }
+  
+  // For non-WebM formats, use as-is
   try {
     const url = URL.createObjectURL(audioBlob)
-    console.log('Successfully created URL:', url.substring(0, 50) + '...')
-    
-    // Test if the URL can be used with Audio element
-    const testAudio = new Audio()
-    testAudio.src = url
-    console.log('Test audio element created with src:', testAudio.src.substring(0, 50) + '...')
+    console.log('Using original format, URL:', url.substring(0, 50) + '...')
     
     return {
       blob: audioBlob,
