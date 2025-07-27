@@ -17,10 +17,24 @@ export interface AudioConversionResult {
 export async function convertAudioForPlayback(audioBlob: Blob): Promise<AudioConversionResult> {
   const originalType = audioBlob.type
   
+  console.log('=== AUDIO CONVERTER DEBUG ===')
+  console.log('Input blob details:', {
+    size: audioBlob.size,
+    type: originalType,
+    hasArrayBuffer: typeof audioBlob.arrayBuffer === 'function',
+    hasStream: typeof audioBlob.stream === 'function'
+  })
+  
   // Always return original audio without conversion
   // Modern browsers support WebM/Opus natively
   try {
     const url = URL.createObjectURL(audioBlob)
+    console.log('Successfully created URL:', url.substring(0, 50) + '...')
+    
+    // Test if the URL can be used with Audio element
+    const testAudio = new Audio()
+    testAudio.src = url
+    console.log('Test audio element created with src:', testAudio.src.substring(0, 50) + '...')
     
     return {
       blob: audioBlob,
@@ -30,6 +44,7 @@ export async function convertAudioForPlayback(audioBlob: Blob): Promise<AudioCon
       success: true
     }
   } catch (error) {
+    console.error('Failed to create audio URL:', error)
     return {
       blob: audioBlob,
       url: '',

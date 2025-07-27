@@ -205,11 +205,23 @@ const Chat: NextPage = () => {
   const sendVoiceMessage = async (audioBlob: Blob, duration: number) => {
     if (isLoading) return
 
-    console.log('Sending voice message:', {
+    console.log('=== AUDIO DEBUG: sendVoiceMessage ===')
+    console.log('Audio blob details:', {
       blobSize: audioBlob.size,
       blobType: audioBlob.type,
-      duration: duration
+      duration: duration,
+      blobConstructor: audioBlob.constructor.name,
+      blobInstanceOfBlob: audioBlob instanceof Blob
     })
+    
+    // Test if we can create URL from blob
+    try {
+      const testUrl = URL.createObjectURL(audioBlob)
+      console.log('Audio blob URL created successfully:', testUrl.substring(0, 50) + '...')
+      URL.revokeObjectURL(testUrl)
+    } catch (error) {
+      console.error('Failed to create URL from audio blob:', error)
+    }
 
     // Guardar el último blob para testing
     setLastAudioBlob(audioBlob)

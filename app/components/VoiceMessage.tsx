@@ -30,20 +30,34 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
   useEffect(() => {
     let cleanup: (() => void) | null = null
     
+    console.log('=== VOICEMESSAGE DEBUG: useEffect ===')
+    console.log('VoiceMessage props:', {
+      hasAudioBlob: !!audioBlob,
+      audioBlobSize: audioBlob?.size,
+      audioBlobType: audioBlob?.type,
+      hasAudioUrl: !!audioUrl,
+      audioUrl: audioUrl,
+      duration: duration,
+      isUser: isUser
+    })
+    
     if (audioBlob && audioBlob.size > 0) {
+      console.log('Starting audio conversion...')
       setIsConverting(true)
       setConversionError(null)
       
       convertAudioForPlayback(audioBlob)
         .then((result) => {
+          console.log('Audio conversion result:', result)
           if (result.success) {
+            console.log('Audio conversion successful, URL:', result.url.substring(0, 50) + '...')
             setAudioSrc(result.url)
             cleanup = () => {
               URL.revokeObjectURL(result.url)
             }
           } else {
-            setConversionError(result.error || 'Audio conversion failed')
             console.error('Audio conversion failed:', result.error)
+            setConversionError(result.error || 'Audio conversion failed')
           }
         })
         .catch((error) => {
@@ -70,6 +84,12 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
+    
+    console.log('=== AUDIO ELEMENT DEBUG ===')
+    console.log('Audio element src:', audio.src)
+    console.log('Audio readyState:', audio.readyState)
+    console.log('Audio networkState:', audio.networkState)
+    console.log('Audio error:', audio.error)
 
     const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime)
@@ -100,20 +120,33 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
     const audio = audioRef.current
     if (!audio || !audioSrc || isToggling) return
 
+    console.log('=== PLAYBACK DEBUG ===')
+    console.log('Attempting to toggle playback')
+    console.log('Audio src:', audio.src)
+    console.log('Audio readyState:', audio.readyState)
+    console.log('Audio duration:', audio.duration)
+    console.log('Current isPlaying:', isPlaying)
+
     setIsToggling(true)
     
     try {
       if (isPlaying) {
+        console.log('Pausing audio...')
         audio.pause()
       } else {
+        console.log('Attempting to play audio...')
         // Ensure audio is ready before playing
         if (audio.readyState >= 2) { // HAVE_CURRENT_DATA
+          console.log('Audio ready, playing now...')
           await audio.play()
         } else {
+          console.log('Audio not ready, waiting for canplay event...')
           // Wait for audio to be ready
           const playWhenReady = () => {
+            console.log('Audio canplay event fired, attempting play...')
             audio.removeEventListener('canplay', playWhenReady)
-            audio.play().catch(() => {
+            audio.play().catch((playError) => {
+              console.error('Play failed after canplay:', playError)
               setConversionError('Playback failed')
             })
           }
@@ -122,6 +155,7 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         }
       }
     } catch (error) {
+      console.error('Playback error:', error)
       setConversionError('Playback failed')
     } finally {
       setTimeout(() => setIsToggling(false), 100) // Prevent rapid clicks
