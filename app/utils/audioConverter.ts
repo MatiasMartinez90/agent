@@ -25,27 +25,29 @@ export async function convertAudioForPlayback(audioBlob: Blob): Promise<AudioCon
     hasStream: typeof audioBlob.stream === 'function'
   })
   
+  // Validate blob size
+  if (audioBlob.size === 0) {
+    console.error('Empty audio blob detected')
+    return {
+      blob: audioBlob,
+      url: '',
+      originalType,
+      convertedType: originalType,
+      success: false,
+      error: 'Empty audio blob'
+    }
+  }
+  
+  if (audioBlob.size < 100) {
+    console.warn('Suspiciously small audio blob:', audioBlob.size, 'bytes')
+  }
+  
   // Convert problematic formats to WAV using Web Audio API for better compatibility
   if (originalType.includes('webm') || originalType.includes('opus')) {
     console.log('Converting WebM/Opus to WAV for better compatibility...')
   } else if (originalType.includes('mp4')) {
-    console.log('MP4 detected - trying direct playback first...')
-    // Try MP4 directly first, it should work better
-    try {
-      const url = URL.createObjectURL(audioBlob)
-      console.log('Using MP4 directly, URL:', url.substring(0, 50) + '...')
-      
-      return {
-        blob: audioBlob,
-        url,
-        originalType,
-        convertedType: originalType,
-        success: true
-      }
-    } catch (error) {
-      console.error('Direct MP4 playback failed, converting to WAV:', error)
-      // Fall through to WAV conversion
-    }
+    console.log('MP4 detected - converting to WAV for maximum reliability...')
+    // Force WAV conversion for MP4 too due to intermittent browser issues
   }
   
   // Convert any problematic format to WAV
