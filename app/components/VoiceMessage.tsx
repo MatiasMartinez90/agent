@@ -58,8 +58,11 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
           // Check for common audio file signatures
           const signatures = {
             'WebM': bytes[0] === 0x1A && bytes[1] === 0x45 && bytes[2] === 0xDF && bytes[3] === 0xA3,
-            'MP4': (bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) || // ftyp
-                   (bytes[0] === 0x00 && bytes[1] === 0x00 && bytes[2] === 0x00 && bytes[3] === 0x20), // typical MP4 start
+            'MP4-ftyp': bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70, // ftyp (standard MP4)
+            'MP4-moof': bytes[4] === 0x6D && bytes[5] === 0x6F && bytes[6] === 0x6F && bytes[7] === 0x66, // moof (fragmented MP4)
+            'MP4-any': (bytes[4] === 0x66 && bytes[5] === 0x74 && bytes[6] === 0x79 && bytes[7] === 0x70) || // ftyp
+                       (bytes[4] === 0x6D && bytes[5] === 0x6F && bytes[6] === 0x6F && bytes[7] === 0x66) || // moof
+                       (bytes[0] === 0x00 && bytes[1] === 0x00 && bytes[2] === 0x00), // any MP4 box start
             'WAV': bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46, // RIFF
             'OGG': bytes[0] === 0x4F && bytes[1] === 0x67 && bytes[2] === 0x67 && bytes[3] === 0x53  // OggS
           }

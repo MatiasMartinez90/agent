@@ -90,16 +90,16 @@ export const useVoiceRecording = (options: UseVoiceRecordingOptions = {}) => {
       }
       console.log('Supported mime types:', supportedTypes)
       
-      // Priority: MP4 > basic WebM > WebM+Opus (due to current compatibility issues)
-      if (MediaRecorder.isTypeSupported('audio/mp4')) {
-        mimeType = 'audio/mp4' // Most compatible format
-        console.log('Using audio/mp4 (highest compatibility)')
-      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-        mimeType = 'audio/webm' // Basic WebM without specific codec
-        console.log('Using basic audio/webm')
+      // Priority: basic WebM > WebM+Opus > MP4 (MP4 generates fragmented format that fails)
+      if (MediaRecorder.isTypeSupported('audio/webm')) {
+        mimeType = 'audio/webm' // Basic WebM without specific codec - most reliable
+        console.log('Using basic audio/webm (highest compatibility)')
       } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-        mimeType = 'audio/webm;codecs=opus' // Last resort due to current issues
-        console.log('Using audio/webm;codecs=opus (fallback)')
+        mimeType = 'audio/webm;codecs=opus' // WebM with Opus
+        console.log('Using audio/webm;codecs=opus')
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4' // Last resort - generates fragmented MP4
+        console.log('Using audio/mp4 (fallback - may generate fragmented format)')
       }
       
       console.log('Selected mime type:', mimeType)
