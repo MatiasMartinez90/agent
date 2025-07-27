@@ -26,15 +26,33 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
   useEffect(() => {
     if (audioBlob && audioBlob.size > 0) {
       try {
+        // Validate audio blob
+        const validTypes = ['audio/webm', 'audio/mp4', 'audio/wav', 'audio/ogg']
+        const isValidType = validTypes.some(type => audioBlob.type.includes(type.split('/')[1]))
+        
+        if (!isValidType) {
+          console.warn('Audio blob type not supported:', audioBlob.type)
+          console.log('Supported types:', validTypes)
+        }
+        
         const url = URL.createObjectURL(audioBlob)
         setAudioSrc(url)
-        console.log('Audio blob URL created:', url, 'Size:', audioBlob.size, 'Type:', audioBlob.type)
+        console.log('Audio blob URL created:', {
+          url: url,
+          size: audioBlob.size,
+          type: audioBlob.type,
+          isValidType: isValidType
+        })
+        
         return () => {
           URL.revokeObjectURL(url)
           console.log('Audio blob URL revoked:', url)
         }
       } catch (error) {
-        console.error('Error creating audio URL from blob:', error)
+        console.error('Error creating audio URL from blob:', error, {
+          blobSize: audioBlob.size,
+          blobType: audioBlob.type
+        })
         setAudioSrc(null)
       }
     } else if (audioUrl) {
@@ -42,7 +60,11 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
       console.log('Using provided audio URL:', audioUrl)
     } else {
       setAudioSrc(null)
-      console.log('No audio source available')
+      console.log('No audio source available', {
+        hasBlob: !!audioBlob,
+        blobSize: audioBlob?.size,
+        hasUrl: !!audioUrl
+      })
     }
   }, [audioBlob, audioUrl])
 
@@ -101,9 +123,22 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
         : 'bg-slate-700 text-gray-100 border border-slate-600'
     } ${className}`}>
-      {/* Audio element */}
+      {/* Audio element with error handling */}
       {audioSrc && (
-        <audio ref={audioRef} src={audioSrc} preload="metadata" />
+        <audio 
+          ref={audioRef} 
+          preload="metadata"
+          onError={(e) => {
+            console.error('Audio element error:', e)
+            console.log('Failed audio src:', audioSrc)
+          }}
+          onLoadedData={() => {
+            console.log('Audio loaded successfully:', audioSrc)
+          }}
+        >
+          <source src={audioSrc} />
+          Your browser does not support the audio element.
+        </audio>
       )}
 
       {/* Play/Pause button */}

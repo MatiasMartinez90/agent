@@ -8,6 +8,7 @@ import HRIcon from '../components/HRIcon'
 import VoiceRecorder from '../components/VoiceRecorder'
 import VoiceMessage from '../components/VoiceMessage'
 import VoiceDiagnostics from '../components/VoiceDiagnostics'
+import AudioTest from '../components/AudioTest'
 import { useChatPersistence } from '../hooks/useChatPersistence'
 
 interface Message {
@@ -86,6 +87,7 @@ const Chat: NextPage = () => {
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showDiagnostics, setShowDiagnostics] = useState(false)
+  const [lastAudioBlob, setLastAudioBlob] = useState<Blob | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -209,6 +211,9 @@ const Chat: NextPage = () => {
       duration: duration
     })
 
+    // Guardar el último blob para testing
+    setLastAudioBlob(audioBlob)
+
     // Agregar mensaje de voz del usuario
     const userMessage = addVoiceMessage(audioBlob, duration, true)
     setIsLoading(true)
@@ -299,7 +304,13 @@ const Chat: NextPage = () => {
       let aiContent = 'Lo siento, no pude procesar tu mensaje. ¿Podrías intentar de nuevo?'
       
       try {
-        if (response.headers.get('content-type')?.includes('application/json')) {
+        // Si la respuesta está vacía, usar mensaje por defecto
+        if (!responseText || responseText.trim().length === 0) {
+          console.warn('N8N returned empty response')
+          aiContent = type === 'voice' 
+            ? 'Recibí tu mensaje de voz. El sistema está procesando audio, por favor intenta con texto por ahora.'
+            : 'Mensaje recibido. El sistema está procesando tu solicitud.'
+        } else if (response.headers.get('content-type')?.includes('application/json')) {
           // Si es JSON, parsearlo normalmente
           const aiResponseData = JSON.parse(responseText)
           aiContent = aiResponseData.output || aiResponseData.response || aiResponseData.message || aiContent
@@ -316,7 +327,9 @@ const Chat: NextPage = () => {
       } catch (parseError) {
         console.error('Error parsing N8N response:', parseError)
         console.log('Raw response text:', responseText)
-        aiContent = 'Recibí tu mensaje pero hubo un problema al procesar la respuesta. ¿Podrías intentar de nuevo?'
+        aiContent = type === 'voice'
+          ? 'Recibí tu audio pero el sistema aún no está configurado para procesarlo. ¿Podrías escribir tu mensaje?'
+          : 'Recibí tu mensaje pero hubo un problema al procesar la respuesta. ¿Podrías intentar de nuevo?'
       }
       
       // Agregar respuesta del agente usando el hook de persistencia
@@ -502,6 +515,13 @@ const Chat: NextPage = () => {
         show={showDiagnostics} 
         onClose={() => setShowDiagnostics(false)} 
       />
+      
+      {/* Audio Test Component - Development Only */}
+      {process.env.NODE_ENV === 'development' && lastAudioBlob && (
+        <div className="fixed bottom-4 left-4 z-50">
+          <AudioTest audioBlob={lastAudioBlob} />
+        </div>
+      )}
     </div>
   )
 }
