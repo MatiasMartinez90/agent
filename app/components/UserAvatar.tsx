@@ -127,6 +127,26 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     }
   }, [pictureUrl, userEmail])
 
+  // Listen for global avatar cache events
+  useEffect(() => {
+    if (!userEmail) return
+
+    const handleAvatarCached = (event: CustomEvent) => {
+      const { userEmail: cachedUserEmail, base64 } = event.detail
+      if (cachedUserEmail === userEmail && base64 && !cachedAvatar) {
+        setCachedAvatar(base64)
+        setImageLoading(false)
+        setImageError(false)
+      }
+    }
+
+    window.addEventListener('avatarCached', handleAvatarCached as EventListener)
+
+    return () => {
+      window.removeEventListener('avatarCached', handleAvatarCached as EventListener)
+    }
+  }, [userEmail, cachedAvatar])
+
   const handleImageError = useCallback(() => {
     if (retryCount < 2 && pictureUrl) {
       // Try different variations of the URL

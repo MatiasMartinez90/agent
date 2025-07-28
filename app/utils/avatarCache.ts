@@ -54,6 +54,13 @@ export class AvatarCache {
       this.cleanExpiredCache(cache)
       this.setCache(cache)
 
+      // Dispatch event to notify components of new cached avatar
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('avatarCached', { 
+          detail: { userEmail, base64 } 
+        }))
+      }
+
       return base64
     } catch (error) {
       return null

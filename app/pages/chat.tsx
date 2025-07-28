@@ -10,6 +10,7 @@ import VoiceMessage from '../components/VoiceMessage'
 import VoiceDiagnostics from '../components/VoiceDiagnostics'
 import AudioTest from '../components/AudioTest'
 import { useChatPersistence } from '../hooks/useChatPersistence'
+import { AvatarCache } from '../utils/avatarCache'
 
 interface Message {
   id: string
@@ -126,6 +127,42 @@ const Chat: NextPage = () => {
       }
     }
   }, [isLoaded, loading, loggedOut])
+
+  // Pre-cache user avatar when user becomes available
+  useEffect(() => {
+    if (user && !loading && !loggedOut) {
+      const userEmail = getUserEmail()
+      if (!userEmail) return
+
+      // Check if already cached
+      const cached = AvatarCache.getCachedAvatar(userEmail)
+      if (cached) return
+
+      // Try to get picture URL and cache it
+      const sources = [
+        user?.picture,
+        user?.signInUserSession?.idToken?.payload?.picture,
+        user?.attributes?.picture
+      ]
+
+      for (const source of sources) {
+        if (source && typeof source === 'string' && source.trim().length > 0) {
+          let url = source.trim().replace(/^http:/, 'https:')
+          
+          // Optimize Google URLs
+          if (url.includes('googleusercontent.com')) {
+            url = url.replace(/[?&]s=\d+/g, '').replace(/[?&]sz=\d+/g, '')
+            const separator = url.includes('?') ? '&' : '?'
+            url = `${url}${separator}s=96`
+          }
+
+          // Pre-cache the avatar
+          AvatarCache.cacheAvatar(userEmail, url)
+          break
+        }
+      }
+    }
+  }, [user, loading, loggedOut])
 
   // Auto-focus adicional cuando el textarea ref cambia
   useEffect(() => {
