@@ -62,6 +62,7 @@ const Chat: NextPage = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [showDiagnostics, setShowDiagnostics] = useState(false)
   const [lastAudioBlob, setLastAudioBlob] = useState<Blob | null>(null)
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -461,23 +462,26 @@ const Chat: NextPage = () => {
         {/* Input Area */}
         <div className="border-t border-slate-700/50 bg-slate-800/30 backdrop-blur-sm p-4">
           <div className="flex items-end space-x-3">
-            <div className="flex-1">
-              <textarea
-                ref={textareaRef}
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Escribe tu respuesta o usa el micrófono..."
-                className="w-full bg-slate-800 border border-slate-600 rounded-2xl px-4 py-3 text-white placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32"
-                rows={1}
-                disabled={isLoading}
-              />
-            </div>
+            {!isRecordingVoice && (
+              <div className="flex-1">
+                <textarea
+                  ref={textareaRef}
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Escribe tu respuesta o usa el micrófono..."
+                  className="w-full bg-slate-800 border border-slate-600 rounded-2xl px-4 py-3 text-white placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32"
+                  rows={1}
+                  disabled={isLoading}
+                />
+              </div>
+            )}
             
             {/* Voice Recorder Button */}
             <VoiceRecorder
               onSendVoice={sendVoiceMessage}
               disabled={isLoading}
+              onRecordingStateChange={setIsRecordingVoice}
             />
             
             {/* Clear Chat History Button */}
@@ -493,15 +497,17 @@ const Chat: NextPage = () => {
             </button>
             
             {/* Send Text Button */}
-            <button
-              onClick={sendMessage}
-              disabled={!inputMessage.trim() || isLoading}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </button>
+            {!isRecordingVoice && (
+              <button
+                onClick={sendMessage}
+                disabled={!inputMessage.trim() || isLoading}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>

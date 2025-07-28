@@ -5,12 +5,14 @@ interface VoiceRecorderProps {
   onSendVoice: (audioBlob: Blob, duration: number) => void
   disabled?: boolean
   className?: string
+  onRecordingStateChange?: (isRecording: boolean) => void
 }
 
 const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   onSendVoice,
   disabled = false,
-  className = ''
+  className = '',
+  onRecordingStateChange
 }) => {
   const [showRecordingUI, setShowRecordingUI] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
@@ -75,6 +77,11 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     }
   }, [isRecording, showRecordingUI])
 
+  // Notify parent component of recording state changes
+  useEffect(() => {
+    onRecordingStateChange?.(showRecordingUI)
+  }, [showRecordingUI, onRecordingStateChange])
+
   if (!isSupported) {
     return null // Don't show voice recorder if not supported
   }
@@ -90,18 +97,30 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
           </span>
         </div>
 
-        {/* Waveform animation */}
+        {/* Progressive waveform */}
         <div className="flex items-center space-x-1 flex-1">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className="w-1 bg-red-400 rounded-full animate-pulse"
-              style={{
-                height: `${Math.random() * 20 + 10}px`,
-                animationDelay: `${i * 0.1}s`
-              }}
-            />
-          ))}
+          {[...Array(20)].map((_, i) => {
+            // Calculate if this bar should be filled based on recording progress
+            const totalBars = 20
+            const progressPercentage = (duration / 60) * 100 // Assuming 60 seconds max for visual
+            const filledBars = Math.floor((progressPercentage / 100) * totalBars)
+            const isFilled = i < filledBars
+            
+            // Vary height for visual appeal
+            const baseHeight = 8 + (i % 3) * 4 + (i % 5) * 2
+            
+            return (
+              <div
+                key={i}
+                className={`w-1 rounded-full transition-all duration-300 ${
+                  isFilled ? 'bg-red-400' : 'bg-red-400/30'
+                }`}
+                style={{
+                  height: `${baseHeight}px`
+                }}
+              />
+            )
+          })}
         </div>
 
         {/* Action buttons */}
