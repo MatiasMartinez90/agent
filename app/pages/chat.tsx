@@ -43,7 +43,6 @@ const Chat: NextPage = () => {
     // Retornar la primera fuente que tenga un valor válido
     for (const source of sources) {
       if (source && typeof source === 'string' && source.trim().length > 0) {
-        console.log('Using name source:', source)
         return source.trim()
       }
     }
@@ -58,32 +57,6 @@ const Chat: NextPage = () => {
            ''
   }
   
-  // Debug: ver qué datos del usuario tenemos
-  console.log('=== USER DEBUG INFO ===')
-  console.log('Full user object:', user)
-  console.log('User keys:', user ? Object.keys(user) : 'no user')
-  
-  if (user?.signInUserSession?.idToken?.payload) {
-    console.log('JWT Payload:', user.signInUserSession.idToken.payload)
-    console.log('JWT Payload keys:', Object.keys(user.signInUserSession.idToken.payload))
-  }
-  
-  if (user?.attributes) {
-    console.log('User attributes:', user.attributes)
-    console.log('Attributes keys:', Object.keys(user.attributes))
-  }
-  
-  console.log('User name sources:', {
-    direct: user?.name,
-    jwt: user?.signInUserSession?.idToken?.payload?.name,
-    attributes: user?.attributes?.name,
-    given_name: user?.signInUserSession?.idToken?.payload?.given_name,
-    family_name: user?.signInUserSession?.idToken?.payload?.family_name,
-    nickname: user?.signInUserSession?.idToken?.payload?.nickname
-  })
-  
-  console.log('Final getUserName() result:', getUserName())
-  console.log('========================')
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showDiagnostics, setShowDiagnostics] = useState(false)
@@ -105,7 +78,6 @@ const Chat: NextPage = () => {
     const timer = setTimeout(() => {
       if (textareaRef.current && !loading && !loggedOut) {
         textareaRef.current.focus()
-        console.log('Auto-focus applied on component mount')
       }
     }, 300)
 
@@ -118,7 +90,6 @@ const Chat: NextPage = () => {
       if (textareaRef.current && !loading && !loggedOut && !isLoading) {
         setTimeout(() => {
           textareaRef.current?.focus()
-          console.log('Auto-focus applied on window focus')
         }, 100)
       }
     }
@@ -134,7 +105,6 @@ const Chat: NextPage = () => {
       const focusTextarea = () => {
         if (textareaRef.current) {
           textareaRef.current.focus()
-          console.log('Auto-focus applied to textarea')
           return true
         }
         return false
@@ -162,7 +132,6 @@ const Chat: NextPage = () => {
     if (textareaRef.current && isLoaded && !loading && !loggedOut) {
       const timer = setTimeout(() => {
         textareaRef.current?.focus()
-        console.log('Auto-focus applied on textarea ref change')
       }, 200)
       
       return () => clearTimeout(timer)
@@ -205,35 +174,6 @@ const Chat: NextPage = () => {
   const sendVoiceMessage = async (audioBlob: Blob, duration: number) => {
     if (isLoading) return
 
-    console.log('=== AUDIO DEBUG: sendVoiceMessage ===')
-    console.log('Audio blob details:', {
-      blobSize: audioBlob.size,
-      blobType: audioBlob.type,
-      duration: duration,
-      blobConstructor: audioBlob.constructor.name,
-      blobInstanceOfBlob: audioBlob instanceof Blob
-    })
-    
-    // Check if browser supports this audio format
-    const audio = document.createElement('audio')
-    const formatSupport = {
-      webm: audio.canPlayType('audio/webm'),
-      webmOpus: audio.canPlayType('audio/webm; codecs="opus"'),
-      webmVorbis: audio.canPlayType('audio/webm; codecs="vorbis"'),
-      mp4: audio.canPlayType('audio/mp4'),
-      wav: audio.canPlayType('audio/wav'),
-      ogg: audio.canPlayType('audio/ogg')
-    }
-    console.log('Browser audio format support:', formatSupport)
-    
-    // Test if we can create URL from blob
-    try {
-      const testUrl = URL.createObjectURL(audioBlob)
-      console.log('Audio blob URL created successfully:', testUrl.substring(0, 50) + '...')
-      URL.revokeObjectURL(testUrl)
-    } catch (error) {
-      console.error('Failed to create URL from audio blob:', error)
-    }
 
     // Guardar el último blob para testing
     setLastAudioBlob(audioBlob)
@@ -271,12 +211,6 @@ const Chat: NextPage = () => {
         formData.append('sessionId', `chat_${Date.now()}`)
         formData.append('timestamp', new Date().toISOString())
 
-        console.log('Sending FormData to N8N:', {
-          audioSize: content.size,
-          audioType: content.type,
-          duration: duration,
-          webhookUrl: webhookUrl
-        })
 
         response = await fetch(webhookUrl, {
           method: 'POST',
@@ -317,12 +251,6 @@ const Chat: NextPage = () => {
 
       // n8n puede devolver diferentes tipos de respuesta
       const responseText = await response.text()
-      console.log('N8N Response:', {
-        status: response.status,
-        contentType: response.headers.get('content-type'),
-        responseLength: responseText.length,
-        responsePreview: responseText.substring(0, 200)
-      })
       
       // Extraer el contenido de la respuesta
       let aiContent = 'Lo siento, no pude procesar tu mensaje. ¿Podrías intentar de nuevo?'
@@ -330,7 +258,6 @@ const Chat: NextPage = () => {
       try {
         // Si la respuesta está vacía, usar mensaje por defecto
         if (!responseText || responseText.trim().length === 0) {
-          console.warn('N8N returned empty response')
           aiContent = type === 'voice' 
             ? 'Recibí tu mensaje de voz. El sistema está procesando audio, por favor intenta con texto por ahora.'
             : 'Mensaje recibido. El sistema está procesando tu solicitud.'
@@ -349,8 +276,6 @@ const Chat: NextPage = () => {
           aiContent = responseText.trim()
         }
       } catch (parseError) {
-        console.error('Error parsing N8N response:', parseError)
-        console.log('Raw response text:', responseText)
         aiContent = type === 'voice'
           ? 'Recibí tu audio pero el sistema aún no está configurado para procesarlo. ¿Podrías escribir tu mensaje?'
           : 'Recibí tu mensaje pero hubo un problema al procesar la respuesta. ¿Podrías intentar de nuevo?'
@@ -366,8 +291,6 @@ const Chat: NextPage = () => {
       }, 100)
 
     } catch (error) {
-      console.error('Error sending message to n8n:', error)
-      
       // Fallback response en caso de error usando el hook de persistencia
       addMessage('Disculpa, estoy teniendo problemas técnicos. Por favor intenta nuevamente en unos momentos.', false)
       setIsLoading(false)

@@ -49,7 +49,6 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   })
 
   const handleStartRecording = async () => {
-    setShowRecordingUI(true)
     await startRecording()
   }
 
@@ -62,12 +61,16 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     setShowRecordingUI(false)
   }
 
-  // Auto-hide recording UI if recording stops unexpectedly
+  // Sync recording UI with actual recording state
   useEffect(() => {
-    if (!isRecording && showRecordingUI) {
+    if (isRecording && !showRecordingUI) {
+      // Recording started, show UI
+      setShowRecordingUI(true)
+    } else if (!isRecording && showRecordingUI) {
+      // Recording stopped, hide UI after a brief delay
       const timer = setTimeout(() => {
         setShowRecordingUI(false)
-      }, 1000)
+      }, 500)
       return () => clearTimeout(timer)
     }
   }, [isRecording, showRecordingUI])

@@ -17,17 +17,8 @@ export interface AudioConversionResult {
 export async function convertAudioForPlayback(audioBlob: Blob): Promise<AudioConversionResult> {
   const originalType = audioBlob.type
   
-  console.log('=== AUDIO CONVERTER DEBUG ===')
-  console.log('Input blob details:', {
-    size: audioBlob.size,
-    type: originalType,
-    hasArrayBuffer: typeof audioBlob.arrayBuffer === 'function',
-    hasStream: typeof audioBlob.stream === 'function'
-  })
-  
   // Validate blob size
   if (audioBlob.size === 0) {
-    console.error('Empty audio blob detected')
     return {
       blob: audioBlob,
       url: '',
@@ -38,88 +29,12 @@ export async function convertAudioForPlayback(audioBlob: Blob): Promise<AudioCon
     }
   }
   
-  if (audioBlob.size < 100) {
-    console.warn('Suspiciously small audio blob:', audioBlob.size, 'bytes')
-  }
-  
-  // Convert problematic formats to WAV using Web Audio API for better compatibility
-  if (originalType.includes('webm') || originalType.includes('opus')) {
-    console.log('Converting WebM/Opus to WAV for better compatibility...')
-  } else if (originalType.includes('mp4')) {
-    console.log('MP4 detected - converting to WAV for maximum reliability...')
-    // Force WAV conversion for MP4 too due to intermittent browser issues
-  }
-  
-  // Convert any problematic format to WAV
-  if (originalType.includes('webm') || originalType.includes('opus') || originalType.includes('mp4')) {
-    console.log('Converting', originalType, 'to WAV for maximum compatibility...')
-    
-    try {
-      // Create audio context
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-      
-      // Get array buffer from blob
-      const arrayBuffer = await audioBlob.arrayBuffer()
-      console.log('Got ArrayBuffer:', arrayBuffer.byteLength, 'bytes')
-      
-      // Decode audio data
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-      console.log('Decoded audio:', {
-        sampleRate: audioBuffer.sampleRate,
-        duration: audioBuffer.duration,
-        numberOfChannels: audioBuffer.numberOfChannels,
-        length: audioBuffer.length
-      })
-      
-      // Convert to WAV
-      const wavBlob = await audioBufferToBlob(audioBuffer)
-      console.log('Converted to WAV:', wavBlob.size, 'bytes')
-      
-      // Create URL for WAV
-      const url = URL.createObjectURL(wavBlob)
-      console.log('Created WAV URL:', url.substring(0, 50) + '...')
-      
-      // Close audio context to free resources
-      audioContext.close()
-      
-      return {
-        blob: wavBlob,
-        url,
-        originalType,
-        convertedType: 'audio/wav',
-        success: true
-      }
-    } catch (error) {
-      console.error('WAV conversion failed:', error)
-      console.log('Fallback: trying original blob...')
-      
-      // Fallback to original if conversion fails
-      try {
-        const url = URL.createObjectURL(audioBlob)
-        return {
-          blob: audioBlob,
-          url,
-          originalType,
-          convertedType: originalType,
-          success: true
-        }
-      } catch (fallbackError) {
-        return {
-          blob: audioBlob,
-          url: '',
-          originalType,
-          convertedType: originalType,
-          success: false,
-          error: `Conversion failed: ${error}. Fallback failed: ${fallbackError}`
-        }
-      }
-    }
-  }
+  // Skip conversion for now - use original WebM format directly
+  // WebM with Opus should be widely supported by modern browsers
   
   // For non-WebM formats, use as-is
   try {
     const url = URL.createObjectURL(audioBlob)
-    console.log('Using original format, URL:', url.substring(0, 50) + '...')
     
     return {
       blob: audioBlob,
@@ -129,7 +44,6 @@ export async function convertAudioForPlayback(audioBlob: Blob): Promise<AudioCon
       success: true
     }
   } catch (error) {
-    console.error('Failed to create audio URL:', error)
     return {
       blob: audioBlob,
       url: '',
