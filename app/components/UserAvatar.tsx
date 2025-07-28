@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { AvatarCache } from '../utils/avatarCache'
 
 interface UserAvatarProps {
   user: any
@@ -53,46 +54,146 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
             }
           }
         } catch (e) {
-          console.log('Could not get picture from localStorage:', e)
+          // Silent fail for localStorage access
         }
         return null
       })()
     ]
     
-    // Return first valid URL
+    // Return first valid URL with improvements
     for (const source of sources) {
       if (source && typeof source === 'string' && source.trim().length > 0) {
-        // Ensure HTTPS but don't modify Google URLs
         let url = source.trim()
-        // Only ensure HTTPS, don't modify the URL structure
+        
+        // Ensure HTTPS
         url = url.replace(/^http:/, 'https:')
+        
+        // For Google images, ensure we use a reliable size parameter
+        if (url.includes('googleusercontent.com')) {
+          // Remove existing size parameters and add reliable ones
+          url = url.replace(/[?&]s=\d+/g, '').replace(/[?&]sz=\d+/g, '')
+          // Add consistent size parameter
+          const separator = url.includes('?') ? '&' : '?'
+          url = `${url}${separator}s=96`
+        }
+        
         return url
       }
     }
     return null
   }, [user])
 
-  // Simple image loading state
+  // Enhanced image loading state with retry mechanism
   const [imageError, setImageError] = useState(false)
   const [imageLoading, setImageLoading] = useState(true)
+  const [retryCount, setRetryCount] = useState(0)
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null)
+  const [cachedAvatar, setCachedAvatar] = useState<string | null>(null)
 
-  // Reset error state when user changes
+  // Get user email for cache key
+  const userEmail = useMemo(() => {
+    const sources = [
+      user?.email,
+      user?.signInUserSession?.idToken?.payload?.email,
+      user?.attributes?.email
+    ]
+    
+    for (const source of sources) {
+      if (source && typeof source === 'string' && source.trim().length > 0) {
+        return source.trim()
+      }
+    }
+    return null
+  }, [user])
+
+  // Reset error state when user changes and check cache
   useEffect(() => {
     setImageError(false)
     setImageLoading(true)
-  }, [pictureUrl])
+    setRetryCount(0)
+    setCurrentImageUrl(pictureUrl)
+    
+    // Check if we have a cached avatar
+    if (userEmail) {
+      const cached = AvatarCache.getCachedAvatar(userEmail)
+      setCachedAvatar(cached)
+      
+      if (cached) {
+        setImageLoading(false)
+        setImageError(false)
+      }
+    } else {
+      setCachedAvatar(null)
+    }
+  }, [pictureUrl, userEmail])
 
   const handleImageError = useCallback(() => {
-    console.log('Error loading user image:', pictureUrl)
+    if (retryCount < 2 && pictureUrl) {
+      // Try different variations of the URL
+      setRetryCount(prev => prev + 1)
+      setImageLoading(true)
+      
+      if (retryCount === 0 && pictureUrl.includes('googleusercontent.com')) {
+        // First retry: try without size parameter
+        const urlWithoutSize = pictureUrl.replace(/[?&]s=\d+/g, '').replace(/[?&]sz=\d+/g, '')
+        setCurrentImageUrl(urlWithoutSize)
+        return
+      } else if (retryCount === 1 && pictureUrl.includes('googleusercontent.com')) {
+        // Second retry: try with different size
+        const baseUrl = pictureUrl.replace(/[?&]s=\d+/g, '').replace(/[?&]sz=\d+/g, '')
+        const separator = baseUrl.includes('?') ? '&' : '?'
+        setCurrentImageUrl(`${baseUrl}${separator}s=128`)
+        return
+      }
+    }
+    
     setImageError(true)
     setImageLoading(false)
-  }, [pictureUrl])
+  }, [pictureUrl, retryCount])
 
   const handleImageLoad = useCallback(() => {
-    console.log('User image loaded successfully:', pictureUrl)
     setImageLoading(false)
     setImageError(false)
-  }, [pictureUrl])
+    
+    // Cache the successfully loaded image
+    if (userEmail && currentImageUrl && !cachedAvatar) {
+      AvatarCache.cacheAvatar(userEmail, currentImageUrl).then(base64 => {
+        if (base64) {
+          setCachedAvatar(base64)
+        }
+      })
+    }
+  }, [userEmail, currentImageUrl, cachedAvatar])
+
+  // Preload image to test if it's accessible
+  useEffect(() => {
+    if (!currentImageUrl) return
+
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.referrerPolicy = 'no-referrer'
+    
+    const timeout = setTimeout(() => {
+      handleImageError()
+    }, 5000) // 5 second timeout
+
+    img.onload = () => {
+      clearTimeout(timeout)
+      setImageLoading(false)
+      setImageError(false)
+    }
+
+    img.onerror = () => {
+      clearTimeout(timeout)
+      handleImageError()
+    }
+
+    img.src = currentImageUrl
+
+    return () => {
+      clearTimeout(timeout)
+    }
+  }, [currentImageUrl, handleImageError])
 
   // Get user name from different possible sources
   const getUserName = useCallback(() => {
@@ -116,26 +217,10 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     return null
   }, [user])
 
-  // Get user email from different possible sources
-  const getUserEmail = useCallback(() => {
-    const sources = [
-      user?.email,
-      user?.signInUserSession?.idToken?.payload?.email,
-      user?.attributes?.email
-    ]
-    
-    for (const source of sources) {
-      if (source && typeof source === 'string' && source.trim().length > 0) {
-        return source.trim()
-      }
-    }
-    return null
-  }, [user])
-
   // Get user initials as fallback
   const getUserInitials = useCallback(() => {
     const name = getUserName()
-    const email = getUserEmail()
+    const email = userEmail
     
     if (name) {
       return name
@@ -149,10 +234,10 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       return email[0].toUpperCase()
     }
     return '👤'
-  }, [getUserName, getUserEmail])
+  }, [getUserName, userEmail])
 
   const name = getUserName()
-  const email = getUserEmail()
+  const email = userEmail
   const initials = getUserInitials()
 
   // Debug logging (only in development)
@@ -172,23 +257,26 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     }
   }, [user, pictureUrl, name, email, initials, imageError, imageLoading])
 
+  // Determine which image source to use (prioritize cached avatar)
+  const finalImageSrc = cachedAvatar || currentImageUrl
+  const shouldShowImage = finalImageSrc && !imageError
+
   return (
     <div className={`${sizeClasses[size]} rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 relative ${showBorder ? `border-2 ${borderColor}` : ''} ${className}`}>
-      {pictureUrl && !imageError ? (
+      {shouldShowImage ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
-            src={pictureUrl} 
+            src={finalImageSrc} 
             alt={name || email || 'Usuario'} 
-            className="w-full h-full object-cover rounded-full"
+            className={`w-full h-full object-cover rounded-full transition-opacity duration-200 ${imageLoading && !cachedAvatar ? 'opacity-0' : 'opacity-100'}`}
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"
             loading="eager"
-            onError={handleImageError}
-            onLoad={handleImageLoad}
-            style={{ display: imageLoading ? 'none' : 'block' }}
+            onError={cachedAvatar ? undefined : handleImageError}
+            onLoad={cachedAvatar ? undefined : handleImageLoad}
           />
-          {imageLoading && (
+          {imageLoading && !cachedAvatar && (
             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-500">
               <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white opacity-70"></div>
             </div>
@@ -200,10 +288,16 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         </span>
       )}
       
-      {/* Error indicator for debugging */}
-      {process.env.NODE_ENV === 'development' && imageError && (
-        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
-          ❌
+      {/* Status indicator for debugging */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-opacity-80 rounded-full text-xs flex items-center justify-center text-white font-bold">
+          {cachedAvatar ? (
+            <div className="w-full h-full bg-green-500 rounded-full flex items-center justify-center">📁</div>
+          ) : imageError ? (
+            <div className="w-full h-full bg-red-500 rounded-full flex items-center justify-center">❌</div>
+          ) : retryCount > 0 ? (
+            <div className="w-full h-full bg-yellow-500 rounded-full flex items-center justify-center">{retryCount}</div>
+          ) : null}
         </div>
       )}
     </div>
