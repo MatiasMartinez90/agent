@@ -88,31 +88,31 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
   if (showRecordingUI) {
     return (
-      <div className={`flex items-center space-x-3 bg-red-500/10 border border-red-500/30 rounded-2xl px-4 py-3 ${className}`}>
+      <div className={`flex items-center ${isMobile ? 'space-x-2 px-3 py-2' : 'space-x-3 px-4 py-3'} bg-red-500/10 border border-red-500/30 rounded-2xl w-full ${className}`}>
         {/* Recording indicator */}
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-          <span className="text-red-400 text-sm font-medium">
+        <div className="flex items-center space-x-1.5">
+          <div className={`${isMobile ? 'w-2.5 h-2.5' : 'w-3 h-3'} bg-red-500 rounded-full animate-pulse`}></div>
+          <span className={`text-red-400 ${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>
             {formatDuration(duration)}
           </span>
         </div>
 
         {/* Progressive waveform */}
-        <div className="flex items-center space-x-1 flex-1">
-          {[...Array(20)].map((_, i) => {
+        <div className={`flex items-center ${isMobile ? 'space-x-0.5' : 'space-x-1'} flex-1`}>
+          {[...Array(isMobile ? 15 : 20)].map((_, i) => {
             // Calculate if this bar should be filled based on recording progress
-            const totalBars = 20
+            const totalBars = isMobile ? 15 : 20
             const progressPercentage = (duration / 60) * 100 // Assuming 60 seconds max for visual
             const filledBars = Math.floor((progressPercentage / 100) * totalBars)
             const isFilled = i < filledBars
             
-            // Vary height for visual appeal
-            const baseHeight = 8 + (i % 3) * 4 + (i % 5) * 2
+            // Vary height for visual appeal (smaller on mobile)
+            const baseHeight = isMobile ? 6 + (i % 3) * 3 + (i % 5) * 1.5 : 8 + (i % 3) * 4 + (i % 5) * 2
             
             return (
               <div
                 key={i}
-                className={`w-1 rounded-full transition-all duration-300 ${
+                className={`${isMobile ? 'w-0.5' : 'w-1'} rounded-full transition-all duration-300 ${
                   isFilled ? 'bg-red-400' : 'bg-red-400/30'
                 }`}
                 style={{
@@ -124,14 +124,14 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center space-x-2">
+        <div className={`flex items-center ${isMobile ? 'space-x-1' : 'space-x-2'}`}>
           {/* Cancel button */}
           <button
             onClick={handleCancelRecording}
-            className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+            className={`${isMobile ? 'p-1.5' : 'p-2'} text-gray-400 hover:text-red-400 transition-colors`}
             title="Cancelar grabación"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -140,10 +140,10 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
           <button
             onClick={handleStopRecording}
             disabled={duration < 1} // Minimum 1 second
-            className="p-2 bg-green-600 text-white rounded-full hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className={`${isMobile ? 'p-1.5' : 'p-2'} bg-green-600 text-white rounded-full hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
             title="Enviar audio"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
           </button>

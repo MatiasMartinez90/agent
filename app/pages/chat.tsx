@@ -460,8 +460,8 @@ const Chat: NextPage = () => {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-slate-700/50 bg-slate-800/30 backdrop-blur-sm p-4">
-          <div className="flex items-end space-x-3">
+        <div className="border-t border-slate-700/50 bg-slate-800/30 backdrop-blur-sm p-4 sm:p-4 px-3">
+          <div className={`flex items-end ${isRecordingVoice ? 'justify-center w-full' : 'space-x-2 sm:space-x-3'}`}>
             {!isRecordingVoice && (
               <div className="flex-1">
                 <textarea
@@ -470,7 +470,7 @@ const Chat: NextPage = () => {
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Escribe tu respuesta o usa el micrófono..."
-                  className="w-full bg-slate-800 border border-slate-600 rounded-2xl px-4 py-3 text-white placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32"
+                  className="w-full bg-slate-800 border border-slate-600 rounded-2xl px-3 py-2 sm:px-4 sm:py-3 text-white placeholder-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32 text-sm sm:text-base"
                   rows={1}
                   disabled={isLoading}
                 />
@@ -488,10 +488,10 @@ const Chat: NextPage = () => {
             <button
               onClick={clearMessages}
               disabled={isLoading}
-              className="text-slate-400 hover:text-red-400 p-3 rounded-xl hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0"
+              className="text-slate-400 hover:text-red-400 p-2 sm:p-3 rounded-xl hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0"
               title="Limpiar historial del chat"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
@@ -501,9 +501,9 @@ const Chat: NextPage = () => {
               <button
                 onClick={sendMessage}
                 disabled={!inputMessage.trim() || isLoading}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-2 sm:p-3 rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex-shrink-0"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
               </button>
