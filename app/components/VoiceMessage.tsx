@@ -144,7 +144,33 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0
+  // Use audio element duration if available, fallback to prop duration
+  const [audioDuration, setAudioDuration] = useState(duration)
+  
+  // Update duration when audio metadata loads
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    const handleLoadedMetadata = () => {
+      if (audio.duration && !isNaN(audio.duration)) {
+        setAudioDuration(audio.duration)
+      }
+    }
+
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+    
+    // Also check if duration is already available
+    if (audio.duration && !isNaN(audio.duration)) {
+      setAudioDuration(audio.duration)
+    }
+
+    return () => {
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+    }
+  }, [audioSrc])
+
+  const progressPercentage = audioDuration > 0 ? (currentTime / audioDuration) * 100 : 0
 
   return (
     <div className={`flex items-center space-x-3 p-3 rounded-2xl min-w-[200px] ${
@@ -208,7 +234,7 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         <div className="flex items-center space-x-0.5 h-6 flex-1">
           {[...Array(40)].map((_, i) => {
             const isActive = i < (progressPercentage / 100) * 40
-            const baseHeight = 6 + (i % 4) * 3 + (i % 7) * 2 // More varied pattern
+            const baseHeight = Math.max(4, 8 + (i % 5) * 4 + (i % 7) * 2) // Ensure minimum height
             return (
               <div
                 key={i}
@@ -228,7 +254,7 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
 
       {/* Duration */}
       <div className={`text-xs ${isUser ? 'text-white/70' : 'text-gray-400'}`}>
-        {formatTime(currentTime)} / {formatTime(duration)}
+        {formatTime(currentTime)} / {formatTime(audioDuration)}
       </div>
 
       {/* Timestamp */}
