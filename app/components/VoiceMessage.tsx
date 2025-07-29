@@ -204,11 +204,11 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
           />
         </div>
 
-        {/* Waveform visualization (static, based on progress) */}
-        <div className="flex items-center space-x-0.5 h-6">
-          {[...Array(30)].map((_, i) => {
-            const isActive = i < (progressPercentage / 100) * 30
-            const baseHeight = 8 + (i % 3) * 4 // Static pattern instead of Math.sin
+        {/* Waveform visualization (progressive, based on playback progress) */}
+        <div className="flex items-center space-x-0.5 h-6 flex-1">
+          {[...Array(40)].map((_, i) => {
+            const isActive = i < (progressPercentage / 100) * 40
+            const baseHeight = 6 + (i % 4) * 3 + (i % 7) * 2 // More varied pattern
             return (
               <div
                 key={i}
