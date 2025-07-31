@@ -98,8 +98,9 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         </div>
 
         {/* Progressive waveform */}
-        <div className="flex items-center space-x-px h-6 flex-1 min-w-0">
-          {[...Array(50)].map((_, i) => {
+        <div className="flex-1">
+          <div className="flex items-center space-x-px h-6 flex-1 min-w-0">
+            {[...Array(50)].map((_, i) => {
             // Calculate if this bar should be filled based on recording progress
             const progressPercentage = (duration / 60) * 100 // Assuming 60 seconds max for visual
             const filledBars = Math.floor((progressPercentage / 100) * 50)
@@ -120,6 +121,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
               />
             )
           })}
+          </div>
         </div>
 
         {/* Action buttons */}
