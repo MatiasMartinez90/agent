@@ -216,20 +216,8 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         )}
       </button>
 
-      {/* Waveform and progress */}
+      {/* Waveform visualization */}
       <div className="flex-1">
-        {/* Progress bar */}
-        <div className={`w-full h-1 rounded-full mb-1 ${
-          isUser ? 'bg-white/20' : 'bg-slate-600'
-        }`}>
-          <div
-            className={`h-full rounded-full transition-all duration-100 ${
-              isUser ? 'bg-white' : 'bg-blue-400'
-            }`}
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
-
         {/* Waveform visualization (progressive, based on playback progress) */}
         <div className="flex items-center space-x-0.5 h-6 flex-1">
           {[...Array(40)].map((_, i) => {
