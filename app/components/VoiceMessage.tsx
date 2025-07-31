@@ -217,9 +217,34 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
       </button>
 
       {/* Waveform visualization */}
-      <div className="flex-1">
+      <div 
+        className="flex-1"
+        ref={(el) => {
+          if (el) {
+            console.log('✅ VoiceMessage Outer Container:', {
+              width: el.offsetWidth,
+              height: el.offsetHeight,
+              clientWidth: el.clientWidth,
+              scrollWidth: el.scrollWidth
+            })
+          }
+        }}
+      >
         {/* Waveform visualization (progressive, based on playback progress) */}
-        <div className="flex items-center space-x-0.5 h-6 flex-1">
+        <div 
+          className="flex items-center space-x-0.5 h-6 flex-1"
+          ref={(el) => {
+            if (el) {
+              console.log('✅ VoiceMessage Wave Container:', {
+                width: el.offsetWidth,
+                height: el.offsetHeight,
+                clientWidth: el.clientWidth,
+                scrollWidth: el.scrollWidth,
+                childrenCount: el.children.length
+              })
+            }
+          }}
+        >
           {[...Array(40)].map((_, i) => {
             const isActive = i < (progressPercentage / 100) * 40
             const baseHeight = Math.max(4, 8 + (i % 5) * 4 + (i % 7) * 2) // Ensure minimum height

@@ -88,7 +88,22 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
   if (showRecordingUI) {
     return (
-      <div className={`flex items-center ${isMobile ? 'space-x-2 px-3 py-2' : 'space-x-3 px-4 py-3'} bg-red-500/10 border border-red-500/30 rounded-2xl w-full ${className}`}>
+      <div 
+        className={`flex items-center ${isMobile ? 'space-x-2 px-3 py-2' : 'space-x-3 px-4 py-3'} bg-red-500/10 border border-red-500/30 rounded-2xl w-full ${className}`}
+        ref={(el) => {
+          if (el) {
+            console.log('🔍 VoiceRecorder Main Container:', {
+              width: el.offsetWidth,
+              height: el.offsetHeight,
+              clientWidth: el.clientWidth,
+              scrollWidth: el.scrollWidth,
+              parentWidth: el.parentElement?.offsetWidth,
+              isMobile,
+              className: el.className
+            })
+          }
+        }}
+      >
         {/* Recording indicator */}
         <div className="flex items-center space-x-1.5 flex-shrink-0">
           <div className={`${isMobile ? 'w-2.5 h-2.5' : 'w-3 h-3'} bg-red-500 rounded-full animate-pulse`}></div>
@@ -98,8 +113,33 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         </div>
 
         {/* Progressive waveform - EXACT COPY from VoiceMessage */}
-        <div className="flex-1">
-          <div className="flex items-center space-x-0.5 h-6 flex-1">
+        <div 
+          className="flex-1"
+          ref={(el) => {
+            if (el) {
+              console.log('🔍 VoiceRecorder Outer Container:', {
+                width: el.offsetWidth,
+                height: el.offsetHeight,
+                clientWidth: el.clientWidth,
+                scrollWidth: el.scrollWidth
+              })
+            }
+          }}
+        >
+          <div 
+            className="flex items-center space-x-0.5 h-6 flex-1"
+            ref={(el) => {
+              if (el) {
+                console.log('🔍 VoiceRecorder Wave Container:', {
+                  width: el.offsetWidth,
+                  height: el.offsetHeight,
+                  clientWidth: el.clientWidth,
+                  scrollWidth: el.scrollWidth,
+                  childrenCount: el.children.length
+                })
+              }
+            }}
+          >
             {[...Array(40)].map((_, i) => {
               // Calculate if this bar should be filled based on recording progress
               const progressPercentage = (duration / 60) * 100 // Assuming 60 seconds max for visual
