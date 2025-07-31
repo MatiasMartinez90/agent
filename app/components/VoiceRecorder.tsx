@@ -98,21 +98,20 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
         </div>
 
         {/* Progressive waveform */}
-        <div className={`flex items-center ${isMobile ? 'space-x-0.5' : 'space-x-1'} flex-1`}>
-          {[...Array(isMobile ? 25 : 35)].map((_, i) => {
+        <div className="flex items-center space-x-0.5 h-6 flex-1">
+          {[...Array(40)].map((_, i) => {
             // Calculate if this bar should be filled based on recording progress
-            const totalBars = isMobile ? 25 : 35
             const progressPercentage = (duration / 60) * 100 // Assuming 60 seconds max for visual
-            const filledBars = Math.floor((progressPercentage / 100) * totalBars)
+            const filledBars = Math.floor((progressPercentage / 100) * 40)
             const isFilled = i < filledBars
             
-            // Vary height for visual appeal (smaller on mobile)
-            const baseHeight = isMobile ? 6 + (i % 3) * 3 + (i % 5) * 1.5 : 8 + (i % 3) * 4 + (i % 5) * 2
+            // Use same height logic as VoiceMessage for consistency
+            const baseHeight = Math.max(4, 8 + (i % 5) * 4 + (i % 7) * 2)
             
             return (
               <div
                 key={i}
-                className={`${isMobile ? 'w-0.5' : 'w-1'} rounded-full transition-all duration-300 ${
+                className={`w-0.5 rounded-full transition-all duration-300 ${
                   isFilled ? 'bg-red-400' : 'bg-red-400/30'
                 }`}
                 style={{
