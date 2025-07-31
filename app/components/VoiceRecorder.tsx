@@ -140,24 +140,35 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
               }
             }}
           >
-            {[...Array(40)].map((_, i) => {
-              // Calculate if this bar should be filled based on recording progress
-              const progressPercentage = (duration / 60) * 100 // Assuming 60 seconds max for visual
-              const isActive = i < (progressPercentage / 100) * 40
+            {(() => {
+              // Calculate optimal number of bars based on available width
+              // Each bar: 2px width + 2px spacing = 4px total
+              const availableWidth = 458 // From logs, could be dynamic
+              const pixelsPerBar = 4 // w-0.5 (2px) + space-x-0.5 (2px)
+              const optimalBars = Math.floor(availableWidth / pixelsPerBar)
+              const barsToUse = Math.min(optimalBars, 120) // Cap at reasonable maximum
+              
+              console.log('🔧 Wave calculation:', { availableWidth, pixelsPerBar, optimalBars, barsToUse })
+              
+              return [...Array(barsToUse)].map((_, i) => {
+                // Calculate if this bar should be filled based on recording progress
+                const progressPercentage = (duration / 60) * 100 // Assuming 60 seconds max for visual
+                const isActive = i < (progressPercentage / 100) * barsToUse
               const baseHeight = Math.max(4, 8 + (i % 5) * 4 + (i % 7) * 2) // Ensure minimum height
               
-              return (
-                <div
-                  key={i}
-                  className={`w-0.5 rounded-full transition-all duration-200 ${
-                    isActive ? 'bg-red-400' : 'bg-red-400/30'
-                  }`}
-                  style={{
-                    height: `${baseHeight}px`
-                  }}
-                />
-              )
-            })}
+                return (
+                  <div
+                    key={i}
+                    className={`w-0.5 rounded-full transition-all duration-200 ${
+                      isActive ? 'bg-red-400' : 'bg-red-400/30'
+                    }`}
+                    style={{
+                      height: `${baseHeight}px`
+                    }}
+                  />
+                )
+              })
+            })()}
           </div>
         </div>
 
