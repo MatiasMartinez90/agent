@@ -88,7 +88,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
   if (showRecordingUI) {
     return (
-      <div className={`flex items-center ${isMobile ? 'space-x-2 px-3 py-2' : 'space-x-3 px-4 py-3'} bg-red-500/10 border border-red-500/30 rounded-2xl w-full ${className}`}>
+      <div className={`flex items-center ${isMobile ? 'space-x-2 px-3 py-2' : 'space-x-3 px-4 py-3'} bg-red-500/10 border border-red-500/30 rounded-2xl w-full min-w-[400px] ${className}`}>
         {/* Recording indicator */}
         <div className="flex items-center space-x-1.5 flex-shrink-0">
           <div className={`${isMobile ? 'w-2.5 h-2.5' : 'w-3 h-3'} bg-red-500 rounded-full animate-pulse`}></div>
