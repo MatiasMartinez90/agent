@@ -88,7 +88,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
   if (showRecordingUI) {
     return (
-      <div className={`flex items-center ${isMobile ? 'space-x-2 px-3 py-2' : 'space-x-3 px-4 py-3'} bg-red-500/10 border border-red-500/30 rounded-2xl w-full min-w-[400px] ${className}`}>
+      <div className={`flex items-center ${isMobile ? 'space-x-2 px-3 py-2' : 'space-x-3 px-4 py-3'} bg-red-500/10 border border-red-500/30 rounded-2xl w-full ${className}`}>
         {/* Recording indicator */}
         <div className="flex items-center space-x-1.5 flex-shrink-0">
           <div className={`${isMobile ? 'w-2.5 h-2.5' : 'w-3 h-3'} bg-red-500 rounded-full animate-pulse`}></div>
@@ -97,30 +97,27 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
           </span>
         </div>
 
-        {/* Progressive waveform */}
+        {/* Progressive waveform - EXACT COPY from VoiceMessage */}
         <div className="flex-1">
-          <div className="flex items-center space-x-px h-6 flex-1 min-w-0">
-            {[...Array(50)].map((_, i) => {
-            // Calculate if this bar should be filled based on recording progress
-            const progressPercentage = (duration / 60) * 100 // Assuming 60 seconds max for visual
-            const filledBars = Math.floor((progressPercentage / 100) * 50)
-            const isFilled = i < filledBars
-            
-            // Use same height logic as VoiceMessage for consistency
-            const baseHeight = Math.max(4, 8 + (i % 5) * 4 + (i % 7) * 2)
-            
-            return (
-              <div
-                key={i}
-                className={`w-1 rounded-full transition-all duration-300 ${
-                  isFilled ? 'bg-red-400' : 'bg-red-400/30'
-                }`}
-                style={{
-                  height: `${baseHeight}px`
-                }}
-              />
-            )
-          })}
+          <div className="flex items-center space-x-0.5 h-6 flex-1">
+            {[...Array(40)].map((_, i) => {
+              // Calculate if this bar should be filled based on recording progress
+              const progressPercentage = (duration / 60) * 100 // Assuming 60 seconds max for visual
+              const isActive = i < (progressPercentage / 100) * 40
+              const baseHeight = Math.max(4, 8 + (i % 5) * 4 + (i % 7) * 2) // Ensure minimum height
+              
+              return (
+                <div
+                  key={i}
+                  className={`w-0.5 rounded-full transition-all duration-200 ${
+                    isActive ? 'bg-red-400' : 'bg-red-400/30'
+                  }`}
+                  style={{
+                    height: `${baseHeight}px`
+                  }}
+                />
+              )
+            })}
           </div>
         </div>
 
