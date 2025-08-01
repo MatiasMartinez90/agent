@@ -84,7 +84,7 @@ const Chat: NextPage = () => {
     }, 300)
 
     return () => clearTimeout(timer)
-  }, []) // Array vacío = solo se ejecuta al montar
+  }, [loading, loggedOut]) // Include dependencies
 
   // Auto-focus cuando la ventana recibe focus (usuario vuelve a la pestaña)
   useEffect(() => {
@@ -163,7 +163,7 @@ const Chat: NextPage = () => {
         }
       }
     }
-  }, [user, loading, loggedOut])
+  }, [user, loading, loggedOut, getUserEmail])
 
   // Auto-focus adicional cuando el textarea ref cambia
   useEffect(() => {
@@ -174,7 +174,7 @@ const Chat: NextPage = () => {
       
       return () => clearTimeout(timer)
     }
-  }, [textareaRef.current, isLoaded, loading, loggedOut])
+  }, [isLoaded, loading, loggedOut])
 
   if (loading || !isLoaded) {
     return (
@@ -523,7 +523,7 @@ const Chat: NextPage = () => {
       {/* Audio Test Component - Temporarily disabled */}
       {false && process.env.NODE_ENV === 'development' && lastAudioBlob && (
         <div className="fixed bottom-4 left-4 z-50">
-          <AudioTest audioBlob={lastAudioBlob} />
+          <AudioTest audioBlob={lastAudioBlob!} />
         </div>
       )}
     </div>
