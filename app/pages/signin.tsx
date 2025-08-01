@@ -51,7 +51,7 @@ const AuthUI: NextPage = () => {
           {/* Authenticator */}
           <div className="mt-8">
             <Authenticator
-              socialProviders={['google']}
+              socialProviders={['google', 'facebook']}
               loginMechanisms={['email']}
               components={{
                 SignUp: {
