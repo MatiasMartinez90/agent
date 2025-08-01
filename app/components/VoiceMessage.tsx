@@ -173,7 +173,7 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
   const progressPercentage = audioDuration > 0 ? (currentTime / audioDuration) * 100 : 0
 
   return (
-    <div className={`flex items-center space-x-3 p-3 rounded-2xl min-w-[200px] ${
+    <div className={`flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-2xl min-w-[180px] sm:min-w-[200px] ${
       isUser 
         ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
         : 'bg-slate-700 text-gray-100 border border-slate-600'
@@ -275,12 +275,7 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </div>
 
-      {/* Error indicator */}
-      {conversionError && (
-        <div className={`text-xs ${isUser ? 'text-red-200' : 'text-red-400'}`} title={conversionError}>
-          ⚠️
-        </div>
-      )}
+
 
     </div>
   )
