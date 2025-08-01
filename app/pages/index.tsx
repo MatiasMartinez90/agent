@@ -9,7 +9,7 @@ const Home: NextPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-blue-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-blue-900 w-full">
       {/* Header moderno */}
       <header className="bg-slate-800/30 backdrop-blur-lg border-b border-slate-700/30">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

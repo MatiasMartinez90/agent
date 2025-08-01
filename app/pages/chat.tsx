@@ -391,13 +391,13 @@ const Chat: NextPage = () => {
       {/* Chat Container */}
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-6 space-y-6">
+        <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-6 space-y-6">
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`flex items-start space-x-2 sm:space-x-3 max-w-[85%] sm:max-w-2xl ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
+              <div className={`flex items-start space-x-2 sm:space-x-3 max-w-[95%] sm:max-w-2xl ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                 {/* Avatar */}
                 {message.isUser ? (
                   <UserAvatar user={user} size="md" />

@@ -173,7 +173,7 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
   const progressPercentage = audioDuration > 0 ? (currentTime / audioDuration) * 100 : 0
 
   return (
-    <div className={`flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-2xl min-w-[180px] sm:min-w-[200px] ${
+    <div className={`flex items-center space-x-1.5 sm:space-x-3 p-2 sm:p-3 rounded-2xl min-w-[160px] sm:min-w-[200px] ${
       isUser 
         ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
         : 'bg-slate-700 text-gray-100 border border-slate-600'
@@ -265,14 +265,14 @@ const VoiceMessage: React.FC<VoiceMessageProps> = ({
         </div>
       </div>
 
-      {/* Duration */}
-      <div className={`text-xs ${isUser ? 'text-white/70' : 'text-gray-400'}`}>
-        {formatTime(currentTime)} / {formatTime(audioDuration)}
-      </div>
-
-      {/* Timestamp */}
-      <div className={`text-xs ${isUser ? 'text-white/50' : 'text-gray-500'}`}>
-        {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      {/* Duration and Timestamp - Stack on mobile */}
+      <div className="flex flex-col items-end space-y-0.5 text-xs min-w-0">
+        <div className={`${isUser ? 'text-white/70' : 'text-gray-400'} whitespace-nowrap`}>
+          {formatTime(currentTime)} / {formatTime(audioDuration)}
+        </div>
+        <div className={`${isUser ? 'text-white/50' : 'text-gray-500'} whitespace-nowrap`}>
+          {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </div>
       </div>
 
 
