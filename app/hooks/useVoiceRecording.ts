@@ -161,6 +161,9 @@ export const useVoiceRecording = (options: UseVoiceRecordingOptions = {}) => {
 
   const cancelRecording = useCallback(() => {
     if (mediaRecorderRef.current && state.isRecording) {
+      // Remove the onstop handler to prevent onRecordingComplete from being called
+      mediaRecorderRef.current.onstop = null
+      
       // Stop recording without calling onRecordingComplete
       mediaRecorderRef.current.stop()
       
@@ -182,6 +185,11 @@ export const useVoiceRecording = (options: UseVoiceRecordingOptions = {}) => {
         streamRef.current.getTracks().forEach(track => track.stop())
         streamRef.current = null
       }
+      
+      // Reset refs
+      mediaRecorderRef.current = null
+      chunksRef.current = []
+      startTimeRef.current = 0
     }
   }, [state.isRecording])
 
