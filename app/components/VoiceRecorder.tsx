@@ -149,6 +149,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
               const barsToUse = Math.min(optimalBars, 120) // Cap at reasonable maximum
               
               console.log('🔧 Wave calculation:', { availableWidth, pixelsPerBar, optimalBars, barsToUse })
+              // Trigger deployment
               
               return [...Array(barsToUse)].map((_, i) => {
                 // Calculate if this bar should be filled based on recording progress
