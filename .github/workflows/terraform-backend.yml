@@ -202,8 +202,6 @@ jobs:
             -var="project_name=${{ vars.PROJECT_NAME }}" \
             -var="google_client_id=${{ secrets.GOOGLE_CLIENT_ID }}" \
             -var="google_client_secret=${{ secrets.GOOGLE_CLIENT_SECRET }}" \
-            -var="facebook_client_id=${{ secrets.FACEBOOK_CLIENT_ID }}" \
-            -var="facebook_client_secret=${{ secrets.FACEBOOK_CLIENT_SECRET }}" \
             -var="db_host=${{ secrets.DB_HOST }}" \
             -var="db_user=${{ secrets.DB_USER }}" \
             -var="db_password=${{ secrets.DB_PASSWORD }}" \
