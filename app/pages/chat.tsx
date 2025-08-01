@@ -1,5 +1,5 @@
 import type { NextPage } from 'next'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import useUser from '../lib/useUser'
 import Router from 'next/router'
 import SmartUserAvatar from '../components/SmartUserAvatar'
@@ -51,12 +51,12 @@ const Chat: NextPage = () => {
     return 'Usuario'
   }
 
-  const getUserEmail = () => {
+  const getUserEmail = useCallback(() => {
     return user?.email || 
            user?.signInUserSession?.idToken?.payload?.email || 
            user?.attributes?.email || 
            ''
-  }
+  }, [user])
   
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
