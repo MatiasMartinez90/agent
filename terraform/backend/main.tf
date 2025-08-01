@@ -223,6 +223,26 @@ resource "aws_cognito_identity_provider" "google" {
   }
 }
 
+# Facebook Identity Provider para Cognito
+resource "aws_cognito_identity_provider" "facebook" {
+  user_pool_id  = aws_cognito_user_pool.user_pool.id
+  provider_name = "Facebook"
+  provider_type = "Facebook"
+
+  provider_details = {
+    client_id        = var.facebook_client_id
+    client_secret    = var.facebook_client_secret
+    authorize_scopes = "email public_profile"
+  }
+
+  attribute_mapping = {
+    email    = "email"
+    username = "id"
+    name     = "name"
+    picture  = "picture"
+  }
+}
+
 # Cognito User Pool Domain para OAuth
 resource "aws_cognito_user_pool_domain" "user_pool_domain" {
   domain       = "${var.project_name}-auth-${random_string.domain_suffix.result}"
@@ -270,7 +290,7 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
   ])
 
   # Supported identity providers
-  supported_identity_providers = ["Google"]
+  supported_identity_providers = ["Google", "Facebook"]
 
   # Token validity - equivalent to CDK Duration.days()
   access_token_validity  = 24  # 24 hours = 1 day
@@ -283,7 +303,10 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
   # No client secret for public client
   generate_secret = false
 
-  depends_on = [aws_cognito_identity_provider.google]
+  depends_on = [
+    aws_cognito_identity_provider.google,
+    aws_cognito_identity_provider.facebook
+  ]
 }
 
 # Outputs - equivalente a CfnOutput en CDK
@@ -305,4 +328,9 @@ output "cognito_user_pool_domain" {
 output "google_identity_provider_name" {
   description = "Google Identity Provider Name"
   value       = aws_cognito_identity_provider.google.provider_name
+}
+
+output "facebook_identity_provider_name" {
+  description = "Facebook Identity Provider Name"
+  value       = aws_cognito_identity_provider.facebook.provider_name
 }

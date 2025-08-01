@@ -18,6 +18,19 @@ variable "google_client_secret" {
   sensitive   = true
 }
 
+# Variables para Facebook OAuth
+variable "facebook_client_id" {
+  description = "Facebook App ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "facebook_client_secret" {
+  description = "Facebook App Secret"
+  type        = string
+  sensitive   = true
+}
+
 # Variables para URLs de callback
 variable "production_callback_url" {
   description = "Production callback URL for OAuth (custom domain)"
