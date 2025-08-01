@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 70" fill="none">
+  <!-- Chat Bot Icon -->
+  <g transform="translate(0, 5)">
+    <!-- Main chat bubble with tail -->
+    <path 
+      d="M5 12 L40 12 Q50 12 50 22 L50 35 Q50 45 40 45 L18 45 L5 55 L5 22 Q5 12 15 12 Z" 
+      fill="#8B5CF6" 
+      stroke="none"
+    />
+    
+    <!-- Eyes -->
+    <circle cx="22" cy="28" r="2.5" fill="white" />
+    <circle cx="33" cy="28" r="2.5" fill="white" />
+    
+    <!-- Eye pupils -->
+    <circle cx="22" cy="28" r="1" fill="#1E293B" />
+    <circle cx="33" cy="28" r="1" fill="#1E293B" />
+    
+    <!-- Antenna -->
+    <circle cx="27.5" cy="5" r="1.8" fill="#8B5CF6" />
+    <line x1="27.5" y1="12" x2="27.5" y2="6.8" stroke="#8B5CF6" strokeWidth="2" strokeLinecap="round" />
+  </g>
+  
+  <!-- Text -->
+  <g transform="translate(65, 0)">
+    <!-- AI - bright cyan -->
+    <text x="0" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="800" fill="#00BFFF">AI</text>
+    
+    <!-- Interview - bright purple -->
+    <text x="0" y="55" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" fill="#DA70D6">Interview</text>
+  </g>
+</svg>

@@ -4,7 +4,7 @@ import useUser from '../lib/useUser'
 import Router from 'next/router'
 import SmartUserAvatar from '../components/SmartUserAvatar'
 import UserAvatar from '../components/UserAvatar'
-import HRIcon from '../components/HRIcon'
+import AIInterviewLogo from '../components/AIInterviewLogo'
 import VoiceRecorder from '../components/VoiceRecorder'
 import VoiceMessage from '../components/VoiceMessage'
 import VoiceDiagnostics from '../components/VoiceDiagnostics'
@@ -352,12 +352,8 @@ const Chat: NextPage = () => {
       {/* Header */}
       <header className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 px-4 py-3">
         <div className="flex justify-between items-center max-w-4xl mx-auto">
-          <div className="flex items-center space-x-3">
-            <HRIcon size="lg" />
-            <div>
-              <h1 className="text-white font-semibold">Entrevista con IA</h1>
-              <p className="text-slate-400 text-sm">Agent Platform</p>
-            </div>
+          <div className="flex items-center">
+            <AIInterviewLogo size="lg" />
           </div>
           
           <div className="flex items-center space-x-4">

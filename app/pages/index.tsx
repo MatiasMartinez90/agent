@@ -1,7 +1,7 @@
 import type { NextPage } from 'next'
 import Router from 'next/router'
 import Image from 'next/image'
-import HRIcon from '../components/HRIcon'
+import AIInterviewLogo from '../components/AIInterviewLogo'
 
 const Home: NextPage = () => {
   const startProcess = () => {
@@ -20,7 +20,7 @@ const Home: NextPage = () => {
                   onClick={() => Router.push('/')}
                   className="flex items-center hover:opacity-80 transition-opacity"
                 >
-                  <HRIcon size="xl" />
+                  <AIInterviewLogo size="xl" />
                 </button>
               </div>
             </div>

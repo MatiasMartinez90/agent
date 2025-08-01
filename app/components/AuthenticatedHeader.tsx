@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import SmartUserAvatar from './SmartUserAvatar'
-import HRIcon from './HRIcon'
+import AIInterviewLogo from './AIInterviewLogo'
 
 interface AuthenticatedHeaderProps {
   user: any
@@ -85,7 +85,7 @@ export default function AuthenticatedHeader({ user, signOut }: AuthenticatedHead
                 onClick={() => router.push('/')}
                 className="flex items-center hover:opacity-80 transition-opacity"
               >
-                <HRIcon size="xl" />
+                <AIInterviewLogo size="xl" />
               </button>
             </div>
           </div>
