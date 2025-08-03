@@ -18,15 +18,6 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   const [showRecordingUI, setShowRecordingUI] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
 
-  // Handle processing state
-  useEffect(() => {
-    if (disabled && isRecording) {
-      setIsProcessing(true)
-    } else if (!disabled) {
-      setIsProcessing(false)
-    }
-  }, [disabled, isRecording])
-
   const {
     isRecording,
     duration,
@@ -48,6 +39,15 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     },
     maxDuration: 300 // 5 minutes
   })
+
+  // Handle processing state
+  useEffect(() => {
+    if (disabled && isRecording) {
+      setIsProcessing(true)
+    } else if (!disabled) {
+      setIsProcessing(false)
+    }
+  }, [disabled, isRecording])
 
   const handleStartRecording = async () => {
     await startRecording()
