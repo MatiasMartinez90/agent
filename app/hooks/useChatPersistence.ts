@@ -50,7 +50,18 @@ const base64ToBlob = (base64: string, mimeType: string): Blob => {
 const STORAGE_KEY = 'agent_chat_messages'
 const MAX_MESSAGES = 100 // Límite para no saturar localStorage
 
-export const useChatPersistence = () => {
+// Función para generar el mensaje inicial personalizado
+const getInitialMessage = (userName?: string): Message => {
+  const name = userName || 'Usuario'
+  return {
+    id: '1',
+    content: `¡Hola ${name}! Mi nombre es Marcelo y te voy a estar guiando en el proceso de selección para las búsquedas de Cloud-IT. ¿Podrías indicarme en qué posición estás interesado en realizar la evaluación?`,
+    isUser: false,
+    timestamp: new Date()
+  }
+}
+
+export const useChatPersistence = (userName?: string) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoaded, setIsLoaded] = useState(false)
 
@@ -105,24 +116,14 @@ export const useChatPersistence = () => {
         console.log('Chat messages loaded from localStorage:', messagesWithDates.length)
       } else {
         // Si no hay mensajes guardados, mostrar mensaje inicial del agente
-        const initialMessage: Message = {
-          id: '1',
-          content: '¡Hola! Soy tu asistente de entrevistas con IA. Te voy a hacer algunas preguntas para conocerte mejor. ¿A qué posición te estás postulando?',
-          isUser: false,
-          timestamp: new Date()
-        }
+        const initialMessage = getInitialMessage(userName)
         setMessages([initialMessage])
         console.log('No stored messages found, showing initial message')
       }
     } catch (error) {
       console.error('Error loading messages from localStorage:', error)
       // En caso de error, mostrar mensaje inicial
-      const initialMessage: Message = {
-        id: '1',
-        content: '¡Hola! Soy tu asistente de entrevistas con IA. Te voy a hacer algunas preguntas para conocerte mejor. ¿A qué posición te estás postulando?',
-        isUser: false,
-        timestamp: new Date()
-      }
+      const initialMessage = getInitialMessage(userName)
       setMessages([initialMessage])
     } finally {
       setIsLoaded(true)
@@ -197,12 +198,7 @@ export const useChatPersistence = () => {
   const clearMessages = () => {
     try {
       localStorage.removeItem(STORAGE_KEY)
-      const initialMessage: Message = {
-        id: '1',
-        content: '¡Hola! Soy tu asistente de entrevistas con IA. Te voy a hacer algunas preguntas para conocerte mejor. ¿A qué posición te estás postulando?',
-        isUser: false,
-        timestamp: new Date()
-      }
+      const initialMessage = getInitialMessage(userName)
       setMessages([initialMessage])
       console.log('Chat messages cleared')
     } catch (error) {

@@ -24,8 +24,7 @@ interface Message {
 
 const Chat: NextPage = () => {
   const { user, loading, loggedOut, signOut, loadingMessage } = useUser({ redirect: '/signin' })
-  const { messages, addMessage, addVoiceMessage, clearMessages, isLoaded } = useChatPersistence()
-
+  
   // Helper functions to extract user data consistently
   const getUserName = () => {
     // Intentar múltiples fuentes de datos para el nombre
@@ -53,6 +52,8 @@ const Chat: NextPage = () => {
     
     return 'Usuario'
   }
+
+  const { messages, addMessage, addVoiceMessage, clearMessages, isLoaded } = useChatPersistence(getUserName())
 
   const getUserEmail = useCallback(() => {
     return user?.email || 
