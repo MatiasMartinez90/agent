@@ -22,20 +22,21 @@ Centralizar todas las constantes, URLs y configuraciones dispersas en el código
 
 ---
 
-## Task QW-002: Mejorar Loading States
+## Task QW-002: Mejorar Loading States ✅
 **Prioridad:** Alta  
 **Tiempo estimado:** 3 horas  
-**Tipo:** UX
+**Tipo:** UX  
+**Estado:** COMPLETADA - $(date +%Y-%m-%d)
 
 ### Descripción
 Implementar loading states más descriptivos y específicos para mejorar la experiencia del usuario.
 
 ### Tareas específicas:
-- [ ] Crear componente `LoadingSpinner` reutilizable
-- [ ] Mejorar loading text en `useUser` hook
-- [ ] Agregar loading específico para envío de mensajes
-- [ ] Implementar loading para grabación de voz
-- [ ] Agregar skeleton screens para mensajes
+- [x] Crear componente `LoadingSpinner` reutilizable
+- [x] Mejorar loading text en `useUser` hook
+- [x] Agregar loading específico para envío de mensajes
+- [x] Implementar loading para grabación de voz
+- [x] Agregar skeleton screens para mensajes
 
 ### Archivos afectados:
 - `app/lib/useUser.ts`

@@ -11,6 +11,7 @@ import VoiceDiagnostics from '../components/VoiceDiagnostics'
 import AudioTest from '../components/AudioTest'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
 import MessageSkeleton from '../components/ui/MessageSkeleton'
+import MessageContent from '../components/ui/MessageContent'
 import { useChatPersistence } from '../hooks/useChatPersistence'
 import { AvatarCache } from '../utils/avatarCache'
 
@@ -432,7 +433,10 @@ const Chat: NextPage = () => {
                       ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' 
                       : 'bg-slate-800 text-slate-100 border border-slate-700'
                   }`}>
-                    <p className="text-sm leading-relaxed">{message.content}</p>
+                    <MessageContent 
+                      content={message.content}
+                      isUser={message.isUser}
+                    />
                     <p className={`text-xs mt-2 opacity-70 ${
                       message.isUser ? 'text-blue-100' : 'text-slate-400'
                     }`}>
@@ -452,11 +456,11 @@ const Chat: NextPage = () => {
                   🤖
                 </div>
                 <div className="bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3">
-                  <LoadingSpinner 
-                    size="sm" 
-                    text={loadingType === 'voice' ? 'Procesando audio...' : 'Escribiendo respuesta...'}
-                    variant="dots"
-                  />
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
                 </div>
               </div>
             </div>

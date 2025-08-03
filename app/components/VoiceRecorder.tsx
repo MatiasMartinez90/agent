@@ -22,7 +22,6 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     isRecording,
     duration,
     isSupported,
-    error,
     startRecording,
     stopRecording,
     cancelRecording,
