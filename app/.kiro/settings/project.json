@@ -1,0 +1,39 @@
+{
+  "name": "RRHH Agent",
+  "version": "1.0.0",
+  "description": "Plataforma de entrevistas laborales con IA",
+  "type": "nextjs-frontend",
+  "stack": {
+    "frontend": "Next.js 13",
+    "ui": "Tailwind CSS",
+    "auth": "AWS Amplify",
+    "language": "TypeScript",
+    "deployment": "AWS S3 + CloudFront"
+  },
+  "environments": {
+    "development": {
+      "url": "http://localhost:3000",
+      "api": "https://n8n.cloud-it.com.ar"
+    },
+    "production": {
+      "url": "https://agent.cloud-it.com.ar",
+      "api": "https://n8n.cloud-it.com.ar"
+    }
+  },
+  "features": {
+    "voice_recording": true,
+    "chat_persistence": true,
+    "google_auth": true,
+    "responsive_design": true
+  },
+  "quality_gates": {
+    "lighthouse_score": 90,
+    "test_coverage": 80,
+    "bundle_size_limit": "500kb",
+    "accessibility_score": "AA"
+  },
+  "team": {
+    "lead_developer": "Usuario",
+    "ai_assistant": "Kiro"
+  }
+}

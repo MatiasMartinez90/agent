@@ -9,6 +9,8 @@ import VoiceRecorder from '../components/VoiceRecorder'
 import VoiceMessage from '../components/VoiceMessage'
 import VoiceDiagnostics from '../components/VoiceDiagnostics'
 import AudioTest from '../components/AudioTest'
+import LoadingSpinner from '../components/ui/LoadingSpinner'
+import MessageSkeleton from '../components/ui/MessageSkeleton'
 import { useChatPersistence } from '../hooks/useChatPersistence'
 import { AvatarCache } from '../utils/avatarCache'
 
@@ -20,7 +22,7 @@ interface Message {
 }
 
 const Chat: NextPage = () => {
-  const { user, loading, loggedOut, signOut } = useUser({ redirect: '/signin' })
+  const { user, loading, loggedOut, signOut, loadingMessage } = useUser({ redirect: '/signin' })
   const { messages, addMessage, addVoiceMessage, clearMessages, isLoaded } = useChatPersistence()
 
   // Helper functions to extract user data consistently
@@ -60,6 +62,7 @@ const Chat: NextPage = () => {
   
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [loadingType, setLoadingType] = useState<'text' | 'voice' | null>(null)
   const [showDiagnostics, setShowDiagnostics] = useState(false)
   const [lastAudioBlob, setLastAudioBlob] = useState<Blob | null>(null)
   const [isRecordingVoice, setIsRecordingVoice] = useState(false)
@@ -179,12 +182,11 @@ const Chat: NextPage = () => {
   if (loading || !isLoaded) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="flex items-center space-x-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
-          <div className="text-white text-xl">
-            {loading ? 'Cargando usuario...' : 'Cargando conversación...'}
-          </div>
-        </div>
+        <LoadingSpinner 
+          size="lg" 
+          text={loading ? loadingMessage : 'Cargando conversación...'}
+          variant="default"
+        />
       </div>
     )
   }
@@ -192,7 +194,11 @@ const Chat: NextPage = () => {
   if (loggedOut) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl">Redirigiendo...</div>
+        <LoadingSpinner 
+          size="md" 
+          text="Redirigiendo al login..."
+          variant="pulse"
+        />
       </div>
     )
   }
@@ -205,6 +211,7 @@ const Chat: NextPage = () => {
     const messageText = inputMessage.trim()
     setInputMessage('')
     setIsLoading(true)
+    setLoadingType('text')
 
     await sendToN8N(messageText, 'text')
   }
@@ -219,6 +226,7 @@ const Chat: NextPage = () => {
     // Agregar mensaje de voz del usuario
     const userMessage = addVoiceMessage(audioBlob, duration, true)
     setIsLoading(true)
+    setLoadingType('voice')
 
     await sendToN8N(audioBlob, 'voice', duration)
   }
@@ -322,6 +330,7 @@ const Chat: NextPage = () => {
       // Agregar respuesta del agente usando el hook de persistencia
       addMessage(aiContent, false)
       setIsLoading(false)
+      setLoadingType(null)
 
       // Re-focus en el textarea después de recibir respuesta
       setTimeout(() => {
@@ -332,6 +341,7 @@ const Chat: NextPage = () => {
       // Fallback response en caso de error usando el hook de persistencia
       addMessage('Disculpa, estoy teniendo problemas técnicos. Por favor intenta nuevamente en unos momentos.', false)
       setIsLoading(false)
+      setLoadingType(null)
 
       // Re-focus en el textarea después de error
       setTimeout(() => {
@@ -442,11 +452,11 @@ const Chat: NextPage = () => {
                   🤖
                 </div>
                 <div className="bg-slate-800 border border-slate-700 rounded-2xl px-4 py-3">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                    <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                  </div>
+                  <LoadingSpinner 
+                    size="sm" 
+                    text={loadingType === 'voice' ? 'Procesando audio...' : 'Escribiendo respuesta...'}
+                    variant="dots"
+                  />
                 </div>
               </div>
             </div>

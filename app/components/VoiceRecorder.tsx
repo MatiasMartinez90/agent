@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useVoiceRecording } from '../hooks/useVoiceRecording'
+import LoadingSpinner from './ui/LoadingSpinner'
 
 interface VoiceRecorderProps {
   onSendVoice: (audioBlob: Blob, duration: number) => void
@@ -15,19 +16,16 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   onRecordingStateChange
 }) => {
   const [showRecordingUI, setShowRecordingUI] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
 
-  // Detect mobile device
+  // Handle processing state
   useEffect(() => {
-    const checkMobile = () => {
-      const mobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768
-      setIsMobile(mobile)
+    if (disabled && isRecording) {
+      setIsProcessing(true)
+    } else if (!disabled) {
+      setIsProcessing(false)
     }
-
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
+  }, [disabled, isRecording])
 
   const {
     isRecording,
@@ -41,6 +39,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   } = useVoiceRecording({
     onRecordingComplete: (audioBlob, duration) => {
       setShowRecordingUI(false)
+      setIsProcessing(true)
       onSendVoice(audioBlob, duration)
     },
     onError: (error) => {
@@ -87,6 +86,19 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
 
   if (!isSupported) {
     return null // Don't show voice recorder if not supported
+  }
+
+  // Show processing state
+  if (isProcessing) {
+    return (
+      <div className={`flex items-center space-x-2 p-3 rounded-2xl bg-blue-500/10 border border-blue-500/30 ${className}`}>
+        <LoadingSpinner 
+          size="sm" 
+          text="Enviando audio..."
+          variant="pulse"
+        />
+      </div>
+    )
   }
 
   if (showRecordingUI) {
