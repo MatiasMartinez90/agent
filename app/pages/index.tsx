@@ -27,11 +27,24 @@ const Home: NextPage = () => {
             
             {/* Navegación derecha */}
             <div className="flex items-center space-x-4">
+              {/* Desktop button */}
               <button 
                 onClick={startProcess}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                className="hidden sm:flex bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
                 Iniciar Sesión
+              </button>
+              
+              {/* Mobile button */}
+              <button
+                onClick={startProcess}
+                className="sm:hidden flex items-center space-x-2 p-2 rounded-xl hover:bg-slate-700/50 transition-all duration-200 text-white"
+                title="Iniciar Sesión"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+                <span className="text-sm">Entrar</span>
               </button>
             </div>
           </div>
