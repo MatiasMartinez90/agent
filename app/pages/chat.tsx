@@ -409,7 +409,7 @@ const Chat: NextPage = () => {
               key={message.id}
               className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`flex items-start space-x-3 sm:space-x-4 max-w-[95%] sm:max-w-2xl ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
+              <div className={`flex items-start space-x-3 sm:space-x-6 max-w-[95%] sm:max-w-2xl ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                 {/* Avatar */}
                 {message.isUser ? (
                   <UserAvatar user={user} size="md" />
@@ -452,7 +452,7 @@ const Chat: NextPage = () => {
           {/* Loading indicator */}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="flex items-start space-x-3 sm:space-x-4 max-w-2xl">
+              <div className="flex items-start space-x-3 sm:space-x-6 max-w-2xl">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
                   🤖
                 </div>
