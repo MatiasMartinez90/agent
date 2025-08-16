@@ -56,10 +56,10 @@ const AuthUI: NextPage = () => {
               components={{
                 SignUp: {
                   FormFields() {
-                    const { validationErrors } = useAuthenticator()
                     return (
                       <>
                         <Authenticator.SignUp.FormFields />
+                        {/* TODO: Fix CheckboxField TypeScript errors
                         <CheckboxField
                           hasError={!!validationErrors.acknowledgement}
                           name="acknowledgement"
@@ -78,6 +78,7 @@ const AuthUI: NextPage = () => {
                             </>
                           }
                         />
+                        */}
                       </>
                     )
                   },
