@@ -4,420 +4,225 @@ import useSWR, { useSWRConfig } from 'swr'
 import { getCurrentUser, signOut as amplifySignOut, fetchAuthSession } from 'aws-amplify/auth'
 
 const extractUserFromLocalStorage = () => {
-  console.log('🔍 [DEBUG] extractUserFromLocalStorage called')
-  
-  if (typeof window === 'undefined') {
-    console.log('❌ [DEBUG] Not in browser environment')
-    return null
-  }
+  if (typeof window === 'undefined') return null
   
   try {
-    // CORRECCIÓN CRÍTICA: Usar el clientId correcto para producción
-    const clientId = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_WEB_CLIENT_ID || '7ho22jco9j63c3hmsrsp4bj0ti'
-    console.log('🔍 [DEBUG] Using clientId:', clientId)
-    console.log('🔍 [DEBUG] Environment NODE_ENV:', process.env.NODE_ENV)
-    
+    const clientId = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_WEB_CLIENT_ID || '2sfsss72kin03gbilraa1pvlb5'
     const lastAuthUser = localStorage.getItem(`CognitoIdentityServiceProvider.${clientId}.LastAuthUser`)
-    console.log('🔍 [DEBUG] lastAuthUser:', lastAuthUser)
     
     if (!lastAuthUser) {
-      console.log('❌ [DEBUG] No lastAuthUser found')
-      // Log all Cognito keys to see what's actually there
+      // Quick cleanup of old tokens
       const allKeys = Object.keys(localStorage).filter(key => key.includes('Cognito'))
-      console.log('🔍 [DEBUG] All Cognito keys in localStorage:', allKeys)
-      
-      // LIMPIEZA AUTOMÁTICA: Detectar y limpiar tokens de clientId obsoleto
-      const obsoleteClientId = '2sfsss72kin03gbilraa1pvlb5'
-      const obsoleteKeys = allKeys.filter(key => key.includes(obsoleteClientId))
-      
-      if (obsoleteKeys.length > 0) {
-        console.log('🧹 [DEBUG] Found obsolete tokens from old clientId, cleaning up:', obsoleteKeys)
-        obsoleteKeys.forEach(key => {
-          localStorage.removeItem(key)
-          console.log('🗑️ [DEBUG] Removed obsolete key:', key)
-        })
-        
-        // También limpiar cualquier otra clave de Cognito que no sea del clientId actual
-        const currentClientKeys = allKeys.filter(key => key.includes(clientId))
-        const otherCognitoKeys = allKeys.filter(key => !key.includes(clientId) && !key.includes(obsoleteClientId))
-        
-        if (otherCognitoKeys.length > 0) {
-          console.log('🧹 [DEBUG] Cleaning other Cognito keys:', otherCognitoKeys)
-          otherCognitoKeys.forEach(key => {
-            localStorage.removeItem(key)
-            console.log('🗑️ [DEBUG] Removed other key:', key)
-          })
-        }
-        
-        console.log('✅ [DEBUG] localStorage cleaned, user needs to re-authenticate')
-      }
-      
+      const obsoleteKeys = allKeys.filter(key => key.includes('2sfsss72kin03gbilraa1pvlb5'))
+      obsoleteKeys.forEach(key => localStorage.removeItem(key))
       return null
     }
     
     const idTokenKey = `CognitoIdentityServiceProvider.${clientId}.${lastAuthUser}.idToken`
-    const accessTokenKey = `CognitoIdentityServiceProvider.${clientId}.${lastAuthUser}.accessToken`
-    const userDataKey = `CognitoIdentityServiceProvider.${clientId}.${lastAuthUser}.userData`
-    
-    console.log('🔍 [DEBUG] Looking for keys:', {
-      idTokenKey,
-      accessTokenKey,
-      userDataKey
-    })
-    
     const idToken = localStorage.getItem(idTokenKey)
-    const accessToken = localStorage.getItem(accessTokenKey)
-    const userData = localStorage.getItem(userDataKey)
     
-    console.log('🔍 [DEBUG] Token status:', {
-      hasIdToken: !!idToken,
-      hasAccessToken: !!accessToken,
-      hasUserData: !!userData,
-      idTokenLength: idToken?.length,
-      accessTokenLength: accessToken?.length,
-      userDataLength: userData?.length
-    })
-    
-    if (!idToken) {
-      console.log('❌ [DEBUG] No idToken found')
-      return null
-    }
+    if (!idToken) return null
     
     // Parse ID token payload
-    console.log('🔍 [DEBUG] Parsing ID token...')
     const payload = JSON.parse(atob(idToken.split('.')[1]))
-    console.log('🔍 [DEBUG] Raw token payload:', payload)
-    
     const currentTime = Math.floor(Date.now() / 1000)
-    const timeUntilExp = payload.exp - currentTime
-    
-    console.log('🔍 [DEBUG] Token timing:', {
-      currentTime,
-      tokenExp: payload.exp,
-      timeUntilExpiry: timeUntilExp,
-      isExpired: timeUntilExp <= 0
-    })
     
     // Check if token is expired
     if (payload.exp < currentTime) {
-      console.log('⚠️ [DEBUG] Token expired, clearing localStorage')
       localStorage.removeItem(idTokenKey)
-      localStorage.removeItem(accessTokenKey)
-      localStorage.removeItem(userDataKey)
+      localStorage.removeItem(`CognitoIdentityServiceProvider.${clientId}.${lastAuthUser}.accessToken`)
+      localStorage.removeItem(`CognitoIdentityServiceProvider.${clientId}.${lastAuthUser}.userData`)
       localStorage.removeItem(`CognitoIdentityServiceProvider.${clientId}.LastAuthUser`)
       return null
     }
     
-    // Parse additional user data if available
-    let parsedUserData = null
-    try {
-      if (userData) {
-        parsedUserData = JSON.parse(userData)
-        console.log('🔍 [DEBUG] Parsed userData:', parsedUserData)
-      }
-    } catch (e) {
-      console.log('⚠️ [DEBUG] Failed to parse userData:', e)
-    }
-    
-    // Crear objeto de usuario completo con todos los datos disponibles
+    // Create user object with Google OAuth data prioritized
     const user = {
       username: payload.username || payload.sub,
       userId: payload.sub,
       signInDetails: {
         loginId: payload.email || payload.username || payload.sub
       },
-      // Datos del ID token con prioridad en Google OAuth attributes
       email: payload.email,
       name: payload.name || payload.given_name || (payload.given_name && payload.family_name ? `${payload.given_name} ${payload.family_name}` : payload.email?.split('@')[0]),
       picture: payload.picture,
-      // Datos específicos de Google OAuth
+      // Google OAuth specific data
       google_name: payload.name,
       google_picture: payload.picture,
       google_email: payload.email,
-      // Datos adicionales del payload
       givenName: payload.given_name,
       familyName: payload.family_name,
-      nickname: payload.nickname,
-      // Metadatos del token
       tokenExp: payload.exp,
-      tokenIat: payload.iat,
-      // Datos adicionales si están disponibles
-      ...(parsedUserData && typeof parsedUserData === 'object' ? parsedUserData : {})
+      tokenIat: payload.iat
     }
-    
-    console.log('✅ [DEBUG] Final user object:', {
-      username: user.username,
-      email: user.email,
-      name: user.name,
-      picture: user.picture,
-      hasSignInDetails: !!user.signInDetails,
-      allKeys: Object.keys(user)
-    })
     
     return user
   } catch (error) {
-    console.error('❌ [DEBUG] Error extracting from localStorage:', error)
-    console.error('❌ [DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack available')
+    console.error('Error extracting user from localStorage:', error)
     return null
   }
 }
 
 const fetcher = async () => {
   const startTime = performance.now()
+  console.log('🔍 [fetcher] Starting authentication check...', {
+    currentURL: typeof window !== 'undefined' ? window.location.href : 'server',
+    timestamp: new Date().toISOString()
+  })
   
   try {
-    console.log('⚡ [DEBUG] Starting authentication check at', new Date().toISOString())
-    console.log('🔍 [DEBUG] Current URL:', window.location.href)
-    console.log('🔍 [DEBUG] Current pathname:', window.location.pathname)
-    console.log('🔍 [DEBUG] Current search:', window.location.search)
-    
-    // MÉTODO PRINCIPAL: Extracción directa de localStorage (0-10ms)
-    console.log('🔍 [DEBUG] Calling extractUserFromLocalStorage...')
+    // Try localStorage first
     const localUser = extractUserFromLocalStorage()
-    console.log('🔍 [DEBUG] extractUserFromLocalStorage returned:', !!localUser)
-    
     if (localUser) {
-      const loadTime = Math.round(performance.now() - startTime)
-      console.log('✅ [DEBUG] Fast localStorage auth succeeded:', {
-        username: localUser.username,
-        name: localUser.name,
-        email: localUser.email,
-        hasPicture: !!localUser.picture,
-        google_name: localUser.google_name,
-        google_email: localUser.google_email,
-        google_picture: localUser.google_picture,
-        loadTime: `${loadTime}ms`,
-        tokenExpiresIn: `${Math.round((localUser.tokenExp - Date.now() / 1000) / 3600)}h`,
-        allUserKeys: Object.keys(localUser)
-      })
-      
+      console.log('✅ [fetcher] Found user in localStorage:', localUser.email)
       return localUser
     }
     
-    // FALLBACK: Solo para casos especiales (OAuth en progreso, etc.)
-    console.log('⚠️ [DEBUG] No localStorage data, checking if OAuth in progress...')
-    
-    // Detectar si estamos en medio de un OAuth flow
-    const isOAuthFlow = window.location.pathname === '/chat' && 
-                       (window.location.search.includes('code=') || 
-                        window.location.hash.includes('access_token') ||
-                        window.location.hash.includes('id_token'))
-    
-    console.log('🔍 [DEBUG] OAuth flow detection:', {
-      isInChatPath: window.location.pathname === '/chat',
-      hasCodeParam: window.location.search.includes('code='),
-      hasAccessTokenHash: window.location.hash.includes('access_token'),
-      isOAuthFlow
+    // Try Amplify getCurrentUser
+    const user = await getCurrentUser()
+    console.log('✅ [fetcher] getCurrentUser successful:', {
+      username: user.username,
+      userId: user.userId
     })
     
-    if (isOAuthFlow) {
-      console.log('🔄 [DEBUG] OAuth flow detected, waiting for token storage...')
-      // Esperar múltiples intentos para que Amplify guarde los tokens
-      for (let attempt = 1; attempt <= 8; attempt++) {
-        const waitTime = attempt <= 3 ? 200 * attempt : 1000 // Primeros 3 intentos rápidos, luego 1s
-        console.log(`⏳ [DEBUG] OAuth attempt ${attempt}/8, waiting ${waitTime}ms...`)
-        await new Promise(resolve => setTimeout(resolve, waitTime))
-        
-        console.log(`🔍 [DEBUG] OAuth retry ${attempt}: calling extractUserFromLocalStorage...`)
-        const retryUser = extractUserFromLocalStorage()
-        
-        if (retryUser) {
-          const loadTime = Math.round(performance.now() - startTime)
-          console.log('✅ [DEBUG] OAuth flow completed successfully:', {
-            username: retryUser.username,
-            name: retryUser.name,
-            email: retryUser.email,
-            google_name: retryUser.google_name,
-            google_email: retryUser.google_email,
-            google_picture: retryUser.google_picture,
-            attempt,
-            loadTime: `${loadTime}ms`
-          })
-          return retryUser
-        }
-        console.log(`❌ [DEBUG] OAuth attempt ${attempt}/8 failed, retryUser was:`, !!retryUser)
-      }
-      console.log('❌ [DEBUG] All OAuth attempts failed')
-    }
-    
-    // ÚLTIMO RECURSO: APIs de Amplify con timeout muy corto + fetchAuthSession for v6
-    console.log('🔄 [DEBUG] Falling back to Amplify APIs (last resort)...')
-    
+    // Try to get session with tokens
+    console.log('🔍 [fetcher] Getting auth session...')
     try {
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          console.log('❌ [DEBUG] Amplify getCurrentUser timeout after 2000ms')
-          reject(new Error('Amplify timeout'))
-        }, 2000) // Aumentar timeout para OAuth flow
+      const session = await fetchAuthSession()
+      console.log('✅ [fetcher] Got session:', {
+        hasTokens: !!session.tokens,
+        hasIdToken: !!session.tokens?.idToken,
+        hasAccessToken: !!session.tokens?.accessToken
       })
       
-      console.log('🔍 [DEBUG] Calling getCurrentUser with 2s timeout...')
-      const userPromise = getCurrentUser()
+      const idToken = session.tokens?.idToken
       
-      const user = await Promise.race([
-        userPromise,
-        timeoutPromise
-      ]) as Awaited<ReturnType<typeof getCurrentUser>>
-      
-      const loadTime = Math.round(performance.now() - startTime)
-      console.log('✅ [DEBUG] Amplify fallback succeeded:', {
-        username: user?.username,
-        hasUser: !!user,
-        loadTime: `${loadTime}ms`
-      })
-      
-      // Si getCurrentUser funciona, intentar obtener el authSession para extraer tokens
-      try {
-        console.log('🔍 [DEBUG] Extracting tokens from fetchAuthSession...')
-        const session = await fetchAuthSession()
-        const idToken = session.tokens?.idToken
-        
-        if (idToken) {
-          console.log('✅ [DEBUG] Got idToken from session, parsing payload...')
-          const payload = JSON.parse(atob(idToken.toString().split('.')[1]))
-          
-          // Crear usuario enriquecido con datos del token
-          const enrichedUser = {
-            ...user,
-            // Datos específicos de Google OAuth
-            google_name: payload.name,
-            google_picture: payload.picture,
-            google_email: payload.email,
-            email: payload.email,
-            name: payload.name,
-            picture: payload.picture
+      if (idToken) {
+        console.log('🔍 [fetcher] Parsing ID token...')
+        const payload = JSON.parse(atob(idToken.toString().split('.')[1]))
+        const enrichedUser = {
+          ...user,
+          email: payload.email,
+          name: payload.name,
+          picture: payload.picture,
+          google_name: payload.name,
+          google_picture: payload.picture,
+          google_email: payload.email,
+          signInDetails: {
+            loginId: payload.email || user.username
           }
-          
-          console.log('✅ [DEBUG] Enriched user with token data:', {
-            username: enrichedUser.username,
-            google_name: enrichedUser.google_name,
-            google_email: enrichedUser.google_email,
-            hasPicture: !!enrichedUser.google_picture
-          })
-          
-          return enrichedUser
         }
-      } catch (sessionError) {
-        console.log('⚠️ [DEBUG] Could not extract session tokens:', sessionError)
+        
+        console.log('✅ [fetcher] User enriched with token data:', {
+          email: enrichedUser.email,
+          name: enrichedUser.name,
+          hasPicture: !!enrichedUser.picture
+        })
+        
+        return enrichedUser
       }
-      
-      return user
-    } catch (amplifyError) {
-      const loadTime = Math.round(performance.now() - startTime)
-      console.error('❌ [DEBUG] Amplify fallback failed:', {
-        error: amplifyError,
-        errorMessage: amplifyError instanceof Error ? amplifyError.message : String(amplifyError),
-        loadTime: `${loadTime}ms`
-      })
-      
-      // DETECCIÓN INTELIGENTE: Si llegamos aquí, probablemente necesitamos re-auth
-      const allCognitoKeys = Object.keys(localStorage).filter(key => key.includes('Cognito'))
-      const hasObsoleteKeys = allCognitoKeys.some(key => key.includes('2sfsss72kin03gbilraa1pvlb5'))
-      
-      if (hasObsoleteKeys || allCognitoKeys.length === 0) {
-        console.log('🚨 [DEBUG] Authentication system requires fresh login. Reason:', hasObsoleteKeys ? 'Obsolete tokens detected' : 'No tokens found')
-        console.log('🔄 [DEBUG] User will be redirected to signin page for re-authentication')
-      }
-      
-      throw new Error('User is not authenticated')
+    } catch (sessionError) {
+      console.log('⚠️ [fetcher] Could not get session, using basic user:', sessionError)
     }
+    
+    const loadTime = Math.round(performance.now() - startTime)
+    console.log('✅ [fetcher] Returning basic user data:', {
+      username: user.username,
+      loadTime: `${loadTime}ms`
+    })
+    return user
     
   } catch (error) {
     const loadTime = Math.round(performance.now() - startTime)
-    console.error('❌ [DEBUG] Authentication failed:', {
-      error,
-      errorMessage: error instanceof Error ? error.message : String(error),
+    console.log('❌ [fetcher] Authentication failed:', {
+      error: error instanceof Error ? error.message : String(error),
       loadTime: `${loadTime}ms`
     })
-    throw error
+    throw new Error('User is not authenticated')
   }
 }
 
 export default function useUser({ redirect = '' } = {}) {
   const { cache } = useSWRConfig()
-  const { data: user, error, isValidating } = useSWR('user', fetcher, {
-    errorRetryCount: 0, // No retries - el fetcher ya tiene fallbacks internos
+  const { data: user, error, isValidating, mutate } = useSWR('user', fetcher, {
+    errorRetryCount: 0,
     revalidateOnFocus: false,
-    revalidateOnReconnect: false, // Disable automatic reconnect revalidation
+    revalidateOnReconnect: false,
     revalidateOnMount: true,
-    dedupingInterval: 10000, // Aumentar deduping interval
-    focusThrottleInterval: 30000, // Throttle focus revalidation
-    refreshInterval: 0, // No polling
-    shouldRetryOnError: false, // No retry on error
-    refreshWhenHidden: false, // Don't refresh when tab is hidden
-    refreshWhenOffline: false // Don't refresh when offline
+    dedupingInterval: 30000, // 30 seconds caching
+    refreshInterval: 0,
+    shouldRetryOnError: false,
+    refreshWhenHidden: false,
+    refreshWhenOffline: false
   })
-  const hasRedirected = useRef(false)
-  const renderCount = useRef(0)
   
-  renderCount.current += 1
+  // Listen for auth success events
+  useEffect(() => {
+    const handleAuthSuccess = () => {
+      console.log('🔔 [useUser] Auth success event received, revalidating...')
+      mutate() // Force revalidation
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('amplify-auth-success', handleAuthSuccess)
+      return () => {
+        window.removeEventListener('amplify-auth-success', handleAuthSuccess)
+      }
+    }
+  }, [mutate])
+  const hasRedirected = useRef(false)
 
   const loading = !user && !error
-  const loggedOut = error && error === 'The user is not authenticated'
-  const isAuthenticating = isValidating && !user
+  const loggedOut = error && error.message === 'User is not authenticated'
 
-  console.log('👤 [useUser] Hook call #' + renderCount.current, {
-    hasUser: !!user,
-    userEmail: user?.signInDetails?.loginId || user?.username,
-    error: error?.message || error,
-    loading,
-    loggedOut,
-    isValidating,
-    redirect,
-    hasRedirected: hasRedirected.current,
-    renderCount: renderCount.current,
-    currentPath: typeof window !== 'undefined' ? window.location.pathname : 'server',
-    timestamp: new Date().toISOString(),
-    stackTrace: renderCount.current > 10 ? new Error().stack?.split('\n').slice(0, 5).join('\n') : 'normal'
-  })
-  
-  if (renderCount.current > 50) {
-    console.error('🚨 [useUser] LOOP INFINITO DETECTADO - MAS DE 50 CALLS!')
-    throw new Error('Loop infinito detectado en useUser hook')
+  // Simple debug logging
+  if (user) {
+    console.log('👤 [useUser] Authenticated:', user.email || user.username)
+  } else if (loggedOut) {
+    console.log('👤 [useUser] Not authenticated')
   }
 
-  // Usar useEffect para manejar redirects de forma segura
+  // Handle redirect for unauthenticated users
   useEffect(() => {
-    console.log('🔄 [useUser] useEffect redirect ejecutado:', {
-      loggedOut,
-      redirect,
-      hasRedirected: hasRedirected.current,
-      shouldRedirect: loggedOut && redirect && !hasRedirected.current
-    })
-    
     if (loggedOut && redirect && !hasRedirected.current) {
-      console.log('🚪 [useUser] Redirigiendo usuario no autenticado (primera vez):', {
+      console.log('🚪 [useUser] Redirecting unauthenticated user:', {
         from: typeof window !== 'undefined' ? window.location.pathname : 'server',
-        to: redirect,
-        timestamp: new Date().toISOString()
+        to: redirect
       })
-      
       hasRedirected.current = true
-      
       setTimeout(() => {
         Router.push({ pathname: redirect, query: { redirect: Router.asPath } })
       }, 100)
     }
-  }, [loggedOut, redirect]) // ← Estas dependencias pueden ser problemáticas
+  }, [loggedOut, redirect])
 
-  // Reset del flag cuando el usuario se autentica
+  // Reset redirect flag when user authenticates
   useEffect(() => {
-    console.log('🔄 [useUser] useEffect reset ejecutado:', {
-      hasUser: !!user,
-      hasRedirected: hasRedirected.current,
-      shouldReset: user && hasRedirected.current
-    })
-    
     if (user && hasRedirected.current) {
-      console.log('🔄 [useUser] Usuario autenticado, reseteando flag de redirect')
       hasRedirected.current = false
     }
   }, [user])
 
   const signOut = async ({ redirect = '/' }) => {
-    cache.delete('user')
-    await Router.push(redirect)
-    await amplifySignOut()
+    try {
+      console.log('🚪 [useUser] Starting signOut process...')
+      
+      // Clear SWR cache first
+      cache.delete('user')
+      
+      // Call Amplify signOut with proper parameters for OAuth
+      await amplifySignOut({ global: true })
+      console.log('✅ [useUser] Amplify signOut successful')
+      
+      // Redirect after successful signout
+      await Router.push(redirect)
+      
+    } catch (error) {
+      console.error('❌ [useUser] SignOut error:', error)
+      
+      // If signOut fails, still try to redirect
+      await Router.push(redirect)
+    }
   }
 
   return { 
@@ -425,7 +230,6 @@ export default function useUser({ redirect = '' } = {}) {
     loggedOut, 
     user, 
     signOut,
-    isAuthenticating,
-    loadingMessage: isAuthenticating ? 'Verificando autenticación...' : 'Cargando usuario...'
+    isAuthenticating: isValidating && !user
   }
 }

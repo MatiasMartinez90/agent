@@ -2,9 +2,16 @@ import '../styles/globals.css'
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import { Amplify } from 'aws-amplify'
+import { Hub } from 'aws-amplify/utils'
 import { ResourcesConfig } from 'aws-amplify'
 import '@aws-amplify/ui-react/styles.css'
 import useEnv from '../lib/useEnv'
+import { useEffect } from 'react'
+// Import signInWithRedirect globally to enable OAuth callback processing
+import { signInWithRedirect } from 'aws-amplify/auth'
+
+// Add global logging to verify OAuth listener setup
+console.log('🌍 [Global] signInWithRedirect imported - OAuth listener should be active')
 
 function MyApp({ Component, pageProps }: AppProps) {
   const { env } = useEnv()
@@ -34,15 +41,16 @@ function MyApp({ Component, pageProps }: AppProps) {
       Cognito: {
         userPoolId: env.cognitoUserPoolId,
         userPoolClientId: env.cognitoUserPoolWebClientId,
+        identityPoolId: undefined, // Not using identity pool
         loginWith: {
           oauth: {
             domain: env.cognitoDomain,
             scopes: ['email', 'openid', 'profile'],
             redirectSignIn: [
-              typeof window !== 'undefined' ? window.location.origin + '/chat' : 'http://localhost:3000/chat'
+              'http://localhost:3001/signin'
             ],
             redirectSignOut: [
-              typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
+              'http://localhost:3001'
             ],
             responseType: 'code',
             providers: ['Google']
@@ -52,13 +60,48 @@ function MyApp({ Component, pageProps }: AppProps) {
     }
   }
   
-  console.log('🔧 [Amplify] Configuration from env variables:', {
-    userPoolId: env.cognitoUserPoolId?.substring(0, 15) + '...',
-    clientId: env.cognitoUserPoolWebClientId?.substring(0, 10) + '...',  
-    domain: env.cognitoDomain?.split('.')[0] + '...'
+  console.log('🔧 [Amplify] FULL Configuration details:', {
+    userPoolId: env.cognitoUserPoolId,
+    clientId: env.cognitoUserPoolWebClientId,
+    domain: env.cognitoDomain,
+    redirectSignIn: amplifyConfig.Auth.Cognito.loginWith.oauth.redirectSignIn,
+    redirectSignOut: amplifyConfig.Auth.Cognito.loginWith.oauth.redirectSignOut,
+    providers: amplifyConfig.Auth.Cognito.loginWith.oauth.providers,
+    scopes: amplifyConfig.Auth.Cognito.loginWith.oauth.scopes
   })
   
-  Amplify.configure(amplifyConfig)
+  try {
+    // Configure Amplify with SSR support for Next.js
+    Amplify.configure(amplifyConfig, { ssr: true })
+    console.log('✅ [Amplify] Configuration successful with SSR support')
+  } catch (error) {
+    console.error('❌ [Amplify] Configuration failed:', error)
+  }
+
+  // Listen for auth events
+  useEffect(() => {
+    const hubListenerCancel = Hub.listen('auth', (data) => {
+      const { payload } = data
+      console.log('🔔 [Hub] Auth event:', payload.event)
+
+      switch (payload.event) {
+        case 'signedIn':
+        case 'signInWithRedirect':
+          console.log('✅ [Hub] User signed in successfully')
+          window.dispatchEvent(new CustomEvent('amplify-auth-success'))
+          break
+        case 'signInWithRedirect_failure':
+        case 'signIn_failure':
+          console.error('❌ [Hub] Sign in failed:', payload.data)
+          break
+        case 'tokenRefresh':
+          console.log('🔄 [Hub] Token refreshed')
+          break
+      }
+    })
+
+    return () => hubListenerCancel()
+  }, [])
 
   return (
     <>
