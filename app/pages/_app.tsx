@@ -28,6 +28,11 @@ function MyApp({ Component, pageProps }: AppProps) {
         
         const config = await response.json()
         
+        // Validate received configuration
+        if (!config || !config.userPoolId || !config.userPoolClientId || !config.cognitoDomain) {
+          throw new Error('Invalid configuration received from server')
+        }
+        
         const amplifyConfig: ResourcesConfig = {
           Auth: {
             Cognito: {
