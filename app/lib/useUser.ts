@@ -15,7 +15,7 @@ const fetcher = async () => {
     const user = await Promise.race([
       getCurrentUser(),
       timeoutPromise
-    ])
+    ]) as Awaited<ReturnType<typeof getCurrentUser>>
     
     console.log('✅ [useUser] User fetched successfully:', {
       hasUser: !!user,
