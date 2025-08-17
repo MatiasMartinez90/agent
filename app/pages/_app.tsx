@@ -4,17 +4,39 @@ import Head from 'next/head'
 import { Amplify } from 'aws-amplify'
 import { ResourcesConfig } from 'aws-amplify'
 import '@aws-amplify/ui-react/styles.css'
+import useEnv from '../lib/useEnv'
 
 function MyApp({ Component, pageProps }: AppProps) {
-  // REVERT: Configuración directa simple que funcionaba
+  const { env } = useEnv()
+  
+  // Solo continúa si tenemos la configuración
+  if (!env) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        backgroundColor: '#0F172A',
+        color: 'white',
+        fontFamily: 'system-ui'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', marginBottom: '16px' }}>⚙️</div>
+          <div>Cargando configuración...</div>
+        </div>
+      </div>
+    )
+  }
+
   const amplifyConfig: ResourcesConfig = {
     Auth: {
       Cognito: {
-        userPoolId: process.env.NEXT_PUBLIC_AUTH_USER_POOL_ID || 'us-east-1_LXi5Bd95p',
-        userPoolClientId: process.env.NEXT_PUBLIC_AUTH_WEB_CLIENT_ID || '7ho22jco9j63c3hmsrsp4bj0ti',
+        userPoolId: env.cognitoUserPoolId,
+        userPoolClientId: env.cognitoUserPoolWebClientId,
         loginWith: {
           oauth: {
-            domain: process.env.NEXT_PUBLIC_COGNITO_DOMAIN || 'agent-auth-42h6i1bt.auth.us-east-1.amazoncognito.com',
+            domain: env.cognitoDomain,
             scopes: ['email', 'openid', 'profile'],
             redirectSignIn: [
               typeof window !== 'undefined' ? window.location.origin + '/chat' : 'http://localhost:3000/chat'
@@ -30,7 +52,11 @@ function MyApp({ Component, pageProps }: AppProps) {
     }
   }
   
-  console.log('🔧 [Amplify] Configuration loaded successfully')
+  console.log('🔧 [Amplify] Configuration from env variables:', {
+    userPoolId: env.cognitoUserPoolId?.substring(0, 15) + '...',
+    clientId: env.cognitoUserPoolWebClientId?.substring(0, 10) + '...',  
+    domain: env.cognitoDomain?.split('.')[0] + '...'
+  })
   
   Amplify.configure(amplifyConfig)
 
