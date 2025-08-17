@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { Auth } from 'aws-amplify'
+import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth'
 
 export interface ChatMessage {
   id: string
@@ -57,10 +57,10 @@ export const useBedrockChat = () => {
       
       // First try to get from Amplify session
       try {
-        console.log('Calling Auth.currentSession()...')
-        const session = await Auth.currentSession()
+        console.log('Calling fetchAuthSession()...')
+        const session = await fetchAuthSession()
         console.log('Session obtained:', session)
-        token = session.getIdToken().getJwtToken()
+        token = session.tokens?.idToken?.toString() || null
         console.log('Token obtained successfully from Amplify session, length:', token?.length)
       } catch (authError) {
         console.error('Auth.currentSession() failed:', authError)

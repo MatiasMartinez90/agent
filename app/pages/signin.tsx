@@ -1,7 +1,8 @@
 import { NextPage } from 'next'
 import Router from 'next/router'
 import { useSWRConfig } from 'swr'
-import { Authenticator, useAuthenticator, CheckboxField, AmplifyProvider, Theme } from '@aws-amplify/ui-react'
+import { useEffect, useRef } from 'react'
+import { Authenticator, useAuthenticator, Theme } from '@aws-amplify/ui-react'
 
 const themeCustom: Theme = {
   name: 'custom',
@@ -23,13 +24,35 @@ const themeCustom: Theme = {
 }
 
 const AuthUI: NextPage = () => {
-  const { route } = useAuthenticator((context) => [context.route])
+  const { route, user } = useAuthenticator((context) => [context.route, context.user])
   const { cache } = useSWRConfig()
+  const hasRedirected = useRef(false)
+
+  // Usar useEffect para evitar múltiples redirects
+  useEffect(() => {
+    if (route === 'authenticated' && !hasRedirected.current) {
+      console.log('✅ [AuthUI] Usuario autenticado, redirigiendo por primera vez...', {
+        userEmail: user?.signInDetails?.loginId || user?.username,
+        userName: user?.username,
+        timestamp: new Date().toISOString()
+      })
+      
+      hasRedirected.current = true
+      
+      // Usar timeout para evitar conflictos con el render
+      setTimeout(() => {
+        Router.push('/chat')
+      }, 100)
+    }
+  }, [route, user])
 
   if (route === 'authenticated') {
-    cache.delete('user')
-    Router.push('/chat')
-    return <>Redirigiendo al chat...</>
+    return <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Redirigiendo al chat...</p>
+      </div>
+    </div>
   }
 
   return (
@@ -153,11 +176,9 @@ const AuthUI: NextPage = () => {
 
 const SignIn: NextPage = () => {
   return (
-    <AmplifyProvider theme={themeCustom}>
-      <Authenticator.Provider>
-        <AuthUI />
-      </Authenticator.Provider>
-    </AmplifyProvider>
+    <Authenticator>
+      <AuthUI />
+    </Authenticator>
   )
 }
 

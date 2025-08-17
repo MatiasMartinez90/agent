@@ -14,6 +14,7 @@ import MessageSkeleton from '../components/ui/MessageSkeleton'
 import MessageContent from '../components/ui/MessageContent'
 import { useChatPersistence } from '../hooks/useChatPersistence'
 import { AvatarCache } from '../utils/avatarCache'
+import { fetchAuthSession } from 'aws-amplify/auth'
 
 interface Message {
   id: string
@@ -25,29 +26,60 @@ interface Message {
 const Chat: NextPage = () => {
   const { user, loading, loggedOut, signOut, loadingMessage } = useUser({ redirect: '/signin' })
   
+  // State for user attributes from Amplify v6
+  const [userAttributes, setUserAttributes] = useState<Record<string, string> | null>(null)
+  const [attributesLoading, setAttributesLoading] = useState(false)
+  
+  
+  // Extract user attributes from ID token when user is available
+  useEffect(() => {
+    const loadUserFromToken = async () => {
+      if (user && !userAttributes && !attributesLoading) {
+        setAttributesLoading(true)
+        try {
+          const session = await fetchAuthSession()
+          const idToken = session.tokens?.idToken
+          
+          if (idToken) {
+            // Parse the JWT payload to get user claims
+            const payload = JSON.parse(atob(idToken.toString().split('.')[1]))
+            
+            const attributes = {
+              name: payload.name || payload.given_name || payload.family_name || '',
+              email: payload.email || '',
+              picture: payload.picture || ''
+            }
+            
+            setUserAttributes(attributes)
+          } else {
+            setUserAttributes({})
+          }
+        } catch (error) {
+          console.error('Error extracting user from token:', error)
+          setUserAttributes({})
+        } finally {
+          setAttributesLoading(false)
+        }
+      }
+    }
+
+    loadUserFromToken()
+  }, [user, userAttributes, attributesLoading])
+  
   // Helper functions to extract user data consistently
   const getUserName = () => {
-    // Intentar múltiples fuentes de datos para el nombre
-    const sources = [
-      user?.name,
-      user?.signInUserSession?.idToken?.payload?.name,
-      user?.attributes?.name,
-      user?.signInUserSession?.idToken?.payload?.given_name,
-      user?.signInUserSession?.idToken?.payload?.nickname,
-      // Combinar given_name + family_name si están disponibles
-      user?.signInUserSession?.idToken?.payload?.given_name && user?.signInUserSession?.idToken?.payload?.family_name 
-        ? `${user.signInUserSession.idToken.payload.given_name} ${user.signInUserSession.idToken.payload.family_name}`
-        : null,
-      // Extraer nombre del email como último recurso
-      user?.email ? user.email.split('@')[0] : null,
-      user?.signInUserSession?.idToken?.payload?.email ? user.signInUserSession.idToken.payload.email.split('@')[0] : null
-    ]
+    // First try to get name from user attributes (real name from Google)
+    if (userAttributes?.name) {
+      return userAttributes.name
+    }
     
-    // Retornar la primera fuente que tenga un valor válido
-    for (const source of sources) {
-      if (source && typeof source === 'string' && source.trim().length > 0) {
-        return source.trim()
-      }
+    // Fallback to email-based username extraction
+    if (user?.username) {
+      return user.username.split('@')[0] || user.username
+    }
+    
+    if (user?.signInDetails?.loginId) {
+      return user.signInDetails.loginId.split('@')[0] || user.signInDetails.loginId
     }
     
     return 'Usuario'
@@ -56,11 +88,16 @@ const Chat: NextPage = () => {
   const { messages, addMessage, addVoiceMessage, clearMessages, isLoaded } = useChatPersistence(getUserName())
 
   const getUserEmail = useCallback(() => {
-    return user?.email || 
-           user?.signInUserSession?.idToken?.payload?.email || 
-           user?.attributes?.email || 
+    // First try to get email from user attributes (real email from Google)
+    if (userAttributes?.email) {
+      return userAttributes.email
+    }
+    
+    // Fallback to Amplify user object
+    return user?.signInDetails?.loginId || 
+           user?.username || 
            ''
-  }, [user])
+  }, [user, userAttributes])
   
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -136,7 +173,7 @@ const Chat: NextPage = () => {
 
   // Pre-cache user avatar when user becomes available
   useEffect(() => {
-    if (user && !loading && !loggedOut) {
+    if (user && !loading && !loggedOut && userAttributes) {
       const userEmail = getUserEmail()
       if (!userEmail) return
 
@@ -144,11 +181,9 @@ const Chat: NextPage = () => {
       const cached = AvatarCache.getCachedAvatar(userEmail)
       if (cached) return
 
-      // Try to get picture URL and cache it
+      // Use picture from user attributes (Google profile picture)
       const sources = [
-        user?.picture,
-        user?.signInUserSession?.idToken?.payload?.picture,
-        user?.attributes?.picture
+        userAttributes.picture // Real picture from Google OAuth
       ]
 
       for (const source of sources) {
@@ -168,7 +203,7 @@ const Chat: NextPage = () => {
         }
       }
     }
-  }, [user, loading, loggedOut, getUserEmail])
+  }, [user, loading, loggedOut, userAttributes, getUserEmail])
 
   // Auto-focus adicional cuando el textarea ref cambia
   useEffect(() => {
@@ -248,7 +283,7 @@ const Chat: NextPage = () => {
         formData.append('user', JSON.stringify({
           email: getUserEmail() || 'unknown@email.com',
           name: getUserName(),
-          picture: user?.picture || user?.signInUserSession?.idToken?.payload?.picture || user?.attributes?.picture || null
+          picture: userAttributes?.picture || null // Real picture from Google OAuth
         }))
         formData.append('chatHistory', JSON.stringify(messages.map(msg => ({
           content: msg.content,
@@ -272,7 +307,7 @@ const Chat: NextPage = () => {
           user: {
             email: getUserEmail() || 'unknown@email.com',
             name: getUserName(),
-            picture: user?.picture || user?.signInUserSession?.idToken?.payload?.picture || user?.attributes?.picture || null
+            picture: userAttributes?.picture || null // Real picture from Google OAuth
           },
           chatHistory: messages.map(msg => ({
             content: msg.content,
@@ -409,7 +444,7 @@ const Chat: NextPage = () => {
               key={message.id}
               className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`flex items-start space-x-3 sm:space-x-8 max-w-[95%] sm:max-w-2xl ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
+              <div className={`flex items-start space-x-4 max-w-[95%] sm:max-w-2xl ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                 {/* Avatar */}
                 {message.isUser ? (
                   <UserAvatar user={user} size="md" />
@@ -452,7 +487,7 @@ const Chat: NextPage = () => {
           {/* Loading indicator */}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="flex items-start space-x-3 sm:space-x-8 max-w-2xl">
+              <div className="flex items-start space-x-4 max-w-2xl">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
                   🤖
                 </div>

@@ -2,6 +2,7 @@ import '../styles/globals.css'
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import { Amplify } from 'aws-amplify'
+import { ResourcesConfig } from 'aws-amplify'
 import '@aws-amplify/ui-react/styles.css'
 import useEnv from '../lib/useEnv'
 
@@ -9,23 +10,30 @@ function MyApp({ Component, pageProps }: AppProps) {
   const { env } = useEnv()
   if (!env) return <>Loading...</>
 
-  Amplify.configure({
+  const amplifyConfig: ResourcesConfig = {
     Auth: {
-      region: 'us-east-1',
-      userPoolId: env.cognitoUserPoolId,
-      userPoolWebClientId: env.cognitoUserPoolWebClientId,
-      oauth: {
-        domain: env.cognitoDomain,
-        scope: ['email', 'openid', 'profile'],
-        redirectSignIn: typeof window !== 'undefined' ? window.location.origin + '/admin' : 'http://localhost:3000/admin',
-        redirectSignOut: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
-        responseType: 'code',
-        options: {
-          AdvancedSecurityDataCollectionFlag: false,
-        },
-      },
-    },
-  })
+      Cognito: {
+        userPoolId: env.cognitoUserPoolId,
+        userPoolClientId: env.cognitoUserPoolWebClientId,
+        loginWith: {
+          oauth: {
+            domain: env.cognitoDomain,
+            scopes: ['email', 'openid', 'profile'],
+            redirectSignIn: [
+              typeof window !== 'undefined' ? window.location.origin + '/admin' : 'http://localhost:3000/admin'
+            ],
+            redirectSignOut: [
+              typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
+            ],
+            responseType: 'code',
+            providers: ['Google']
+          }
+        }
+      }
+    }
+  }
+  
+  Amplify.configure(amplifyConfig)
 
   return (
     <>
