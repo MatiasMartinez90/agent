@@ -1,34 +1,70 @@
 import Router from 'next/router'
 import { useRef, useEffect } from 'react'
 import useSWR, { useSWRConfig } from 'swr'
-import { getCurrentUser, signOut as amplifySignOut } from 'aws-amplify/auth'
+import { getCurrentUser, signOut as amplifySignOut, fetchAuthSession } from 'aws-amplify/auth'
 
 const fetcher = async () => {
   try {
-    console.log('🔍 [useUser] Fetching current user...')
+    console.log('🔍 [useUser] Checking authentication state...')
     
-    // Agregar timeout para evitar que getCurrentUser() se cuelgue indefinidamente
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('getCurrentUser timeout after 10 seconds')), 10000)
-    })
-    
-    const user = await Promise.race([
-      getCurrentUser(),
-      timeoutPromise
-    ]) as Awaited<ReturnType<typeof getCurrentUser>>
-    
-    console.log('✅ [useUser] User fetched successfully:', {
-      hasUser: !!user,
-      username: user?.username,
-      signInDetails: user?.signInDetails?.loginId
-    })
-    return user
+    // Método 1: Intentar getCurrentUser con timeout corto
+    try {
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('getCurrentUser timeout')), 3000)
+      })
+      
+      const user = await Promise.race([
+        getCurrentUser(),
+        timeoutPromise
+      ]) as Awaited<ReturnType<typeof getCurrentUser>>
+      
+      console.log('✅ [useUser] getCurrentUser succeeded:', {
+        username: user?.username,
+        signInDetails: user?.signInDetails?.loginId
+      })
+      return user
+    } catch (getCurrentUserError) {
+      console.log('⚠️ [useUser] getCurrentUser failed, trying session-based approach...')
+      
+      // Método 2: Usar fetchAuthSession que es más confiable después de OAuth
+      try {
+        const session = await fetchAuthSession()
+        
+        if (!session.tokens?.idToken) {
+          throw new Error('No ID token found in session')
+        }
+        
+        // Extraer información del usuario del ID token
+        const idToken = session.tokens.idToken.toString()
+        const payload = JSON.parse(atob(idToken.split('.')[1]))
+        
+        // Crear un objeto de usuario compatible
+        const user = {
+          username: payload.username || payload.sub,
+          userId: payload.sub,
+          signInDetails: {
+            loginId: payload.email || payload.username
+          },
+          // Agregar propiedades adicionales si están disponibles
+          ...(payload.email && { email: payload.email }),
+          ...(payload.name && { name: payload.name }),
+          ...(payload.picture && { picture: payload.picture })
+        }
+        
+        console.log('✅ [useUser] Session-based auth succeeded:', {
+          username: user.username,
+          email: payload.email,
+          hasIdToken: true
+        })
+        
+        return user
+      } catch (sessionError) {
+        console.error('❌ [useUser] Session-based auth failed:', sessionError)
+        throw new Error('User is not authenticated')
+      }
+    }
   } catch (error) {
-    console.error('❌ [useUser] Error fetching user:', {
-      error,
-      errorMessage: error instanceof Error ? error.message : String(error),
-      isTimeout: error instanceof Error && error.message.includes('timeout')
-    })
+    console.error('❌ [useUser] Authentication failed:', error)
     throw error
   }
 }
