@@ -3,68 +3,138 @@ import { useRef, useEffect } from 'react'
 import useSWR, { useSWRConfig } from 'swr'
 import { getCurrentUser, signOut as amplifySignOut, fetchAuthSession } from 'aws-amplify/auth'
 
-const fetcher = async () => {
+const extractUserFromLocalStorage = () => {
+  if (typeof window === 'undefined') return null
+  
   try {
-    console.log('🔍 [useUser] Checking authentication state...')
+    const clientId = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_WEB_CLIENT_ID || '2sfsss72kin03gbilraa1pvlb5'
+    const lastAuthUser = localStorage.getItem(`CognitoIdentityServiceProvider.${clientId}.LastAuthUser`)
     
-    // Método 1: Acceso directo al localStorage (más rápido y confiable)
-    try {
-      if (typeof window !== 'undefined') {
-        const clientId = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_WEB_CLIENT_ID || '2sfsss72kin03gbilraa1pvlb5'
-        
-        // Esperar un poco si acabamos de llegar del OAuth redirect
-        const isFromOAuth = window.location.pathname === '/chat' && !localStorage.getItem(`CognitoIdentityServiceProvider.${clientId}.LastAuthUser`)
-        if (isFromOAuth) {
-          console.log('🔄 [useUser] OAuth redirect detected, waiting for tokens to be saved...')
-          await new Promise(resolve => setTimeout(resolve, 1000))
-        }
-        
-        const lastAuthUser = localStorage.getItem(`CognitoIdentityServiceProvider.${clientId}.LastAuthUser`)
-        
-        if (lastAuthUser) {
-          const idTokenKey = `CognitoIdentityServiceProvider.${clientId}.${lastAuthUser}.idToken`
-          const idToken = localStorage.getItem(idTokenKey)
-          
-          if (idToken) {
-            // Verificar que el token no esté expirado
-            const payload = JSON.parse(atob(idToken.split('.')[1]))
-            const currentTime = Math.floor(Date.now() / 1000)
-            
-            if (payload.exp >= currentTime) {
-              // Token válido - crear objeto de usuario
-              const user = {
-                username: payload.username || payload.sub,
-                userId: payload.sub,
-                signInDetails: {
-                  loginId: payload.email || payload.username
-                },
-                ...(payload.email && { email: payload.email }),
-                ...(payload.name && { name: payload.name }),
-                ...(payload.picture && { picture: payload.picture })
-              }
-              
-              console.log('✅ [useUser] localStorage auth succeeded (fast path):', {
-                username: user.username,
-                email: payload.email,
-                tokenValid: true,
-                fromOAuth: isFromOAuth
-              })
-              
-              return user
-            } else {
-              console.log('⚠️ [useUser] localStorage token expired, trying Amplify methods...')
-            }
-          }
-        }
-      }
-    } catch (localStorageError) {
-      console.log('⚠️ [useUser] localStorage check failed, trying Amplify methods...')
+    if (!lastAuthUser) return null
+    
+    const idTokenKey = `CognitoIdentityServiceProvider.${clientId}.${lastAuthUser}.idToken`
+    const accessTokenKey = `CognitoIdentityServiceProvider.${clientId}.${lastAuthUser}.accessToken`
+    const userDataKey = `CognitoIdentityServiceProvider.${clientId}.${lastAuthUser}.userData`
+    
+    const idToken = localStorage.getItem(idTokenKey)
+    const accessToken = localStorage.getItem(accessTokenKey)
+    const userData = localStorage.getItem(userDataKey)
+    
+    if (!idToken) return null
+    
+    // Parse ID token payload
+    const payload = JSON.parse(atob(idToken.split('.')[1]))
+    const currentTime = Math.floor(Date.now() / 1000)
+    
+    // Check if token is expired
+    if (payload.exp < currentTime) {
+      console.log('⚠️ [useUser] Token expired, clearing localStorage')
+      // Clear expired tokens
+      localStorage.removeItem(idTokenKey)
+      localStorage.removeItem(accessTokenKey)
+      localStorage.removeItem(userDataKey)
+      localStorage.removeItem(`CognitoIdentityServiceProvider.${clientId}.LastAuthUser`)
+      return null
     }
+    
+    // Parse additional user data if available
+    let parsedUserData = null
+    try {
+      if (userData) {
+        parsedUserData = JSON.parse(userData)
+      }
+    } catch (e) {
+      // Ignore userData parsing errors
+    }
+    
+    // Crear objeto de usuario completo con todos los datos disponibles
+    const user = {
+      username: payload.username || payload.sub,
+      userId: payload.sub,
+      signInDetails: {
+        loginId: payload.email || payload.username || payload.sub
+      },
+      // Datos del ID token
+      email: payload.email,
+      name: payload.name || payload.given_name || (payload.given_name && payload.family_name ? `${payload.given_name} ${payload.family_name}` : null),
+      picture: payload.picture,
+      // Datos adicionales del payload
+      givenName: payload.given_name,
+      familyName: payload.family_name,
+      nickname: payload.nickname,
+      // Metadatos del token
+      tokenExp: payload.exp,
+      tokenIat: payload.iat,
+      // Datos adicionales si están disponibles
+      ...(parsedUserData && typeof parsedUserData === 'object' ? parsedUserData : {})
+    }
+    
+    return user
+  } catch (error) {
+    console.error('❌ [useUser] Error extracting from localStorage:', error)
+    return null
+  }
+}
 
-    // Método 2: Intentar getCurrentUser con timeout corto (fallback)
+const fetcher = async () => {
+  const startTime = performance.now()
+  
+  try {
+    console.log('⚡ [useUser] Starting fast authentication check...')
+    
+    // MÉTODO PRINCIPAL: Extracción directa de localStorage (0-10ms)
+    const localUser = extractUserFromLocalStorage()
+    
+    if (localUser) {
+      const loadTime = Math.round(performance.now() - startTime)
+      console.log('✅ [useUser] Fast localStorage auth succeeded:', {
+        username: localUser.username,
+        name: localUser.name,
+        email: localUser.email,
+        hasPicture: !!localUser.picture,
+        loadTime: `${loadTime}ms`,
+        tokenExpiresIn: `${Math.round((localUser.tokenExp - Date.now() / 1000) / 3600)}h`
+      })
+      
+      return localUser
+    }
+    
+    // FALLBACK: Solo para casos especiales (OAuth en progreso, etc.)
+    console.log('⚠️ [useUser] No localStorage data, checking if OAuth in progress...')
+    
+    // Detectar si estamos en medio de un OAuth flow
+    const isOAuthFlow = window.location.pathname === '/chat' && 
+                       (window.location.search.includes('code=') || 
+                        window.location.hash.includes('access_token'))
+    
+    if (isOAuthFlow) {
+      console.log('🔄 [useUser] OAuth flow detected, waiting for token storage...')
+      // Esperar múltiples intentos para que Amplify guarde los tokens
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 500 * attempt)) // 500ms, 1s, 1.5s, 2s, 2.5s
+        
+        const retryUser = extractUserFromLocalStorage()
+        if (retryUser) {
+          const loadTime = Math.round(performance.now() - startTime)
+          console.log('✅ [useUser] OAuth flow completed successfully:', {
+            username: retryUser.username,
+            name: retryUser.name,
+            email: retryUser.email,
+            attempt,
+            loadTime: `${loadTime}ms`
+          })
+          return retryUser
+        }
+        console.log(`⏳ [useUser] OAuth attempt ${attempt}/5, still waiting...`)
+      }
+    }
+    
+    // ÚLTIMO RECURSO: APIs de Amplify con timeout muy corto
+    console.log('🔄 [useUser] Falling back to Amplify APIs (last resort)...')
+    
     try {
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('getCurrentUser timeout')), 2000)
+        setTimeout(() => reject(new Error('Amplify timeout')), 1000)
       })
       
       const user = await Promise.race([
@@ -72,61 +142,28 @@ const fetcher = async () => {
         timeoutPromise
       ]) as Awaited<ReturnType<typeof getCurrentUser>>
       
-      console.log('✅ [useUser] getCurrentUser succeeded:', {
+      const loadTime = Math.round(performance.now() - startTime)
+      console.log('✅ [useUser] Amplify fallback succeeded:', {
         username: user?.username,
-        signInDetails: user?.signInDetails?.loginId
+        loadTime: `${loadTime}ms`
       })
-      return user
-    } catch (getCurrentUserError) {
-      console.log('⚠️ [useUser] getCurrentUser failed, trying session-based approach...')
       
-      // Método 3: Usar fetchAuthSession (último recurso)
-      try {
-        const sessionTimeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('fetchAuthSession timeout')), 3000)
-        })
-        
-        const session = await Promise.race([
-          fetchAuthSession(),
-          sessionTimeoutPromise
-        ]) as Awaited<ReturnType<typeof fetchAuthSession>>
-        
-        console.log('🔍 [useUser] Session fetched, checking tokens...')
-        
-        if (!session.tokens?.idToken) {
-          throw new Error('No ID token found in session')
-        }
-        
-        // Extraer información del usuario del ID token
-        const idToken = session.tokens.idToken.toString()
-        const payload = JSON.parse(atob(idToken.split('.')[1]))
-        
-        // Crear un objeto de usuario compatible
-        const user = {
-          username: payload.username || payload.sub,
-          userId: payload.sub,
-          signInDetails: {
-            loginId: payload.email || payload.username
-          },
-          ...(payload.email && { email: payload.email }),
-          ...(payload.name && { name: payload.name }),
-          ...(payload.picture && { picture: payload.picture })
-        }
-        
-        console.log('✅ [useUser] Session-based auth succeeded:', {
-          username: user.username,
-          email: payload.email,
-          hasIdToken: true
-        })
-        
-        return user
-      } catch (sessionError) {
-        console.error('❌ [useUser] All authentication methods failed:', sessionError)
-        throw new Error('User is not authenticated')
-      }
+      return user
+    } catch (amplifyError) {
+      const loadTime = Math.round(performance.now() - startTime)
+      console.error('❌ [useUser] All methods failed:', {
+        error: amplifyError,
+        loadTime: `${loadTime}ms`
+      })
+      throw new Error('User is not authenticated')
     }
+    
   } catch (error) {
-    console.error('❌ [useUser] Authentication failed:', error)
+    const loadTime = Math.round(performance.now() - startTime)
+    console.error('❌ [useUser] Authentication failed:', {
+      error,
+      loadTime: `${loadTime}ms`
+    })
     throw error
   }
 }
