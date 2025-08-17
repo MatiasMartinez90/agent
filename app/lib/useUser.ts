@@ -6,7 +6,17 @@ import { getCurrentUser, signOut as amplifySignOut } from 'aws-amplify/auth'
 const fetcher = async () => {
   try {
     console.log('🔍 [useUser] Fetching current user...')
-    const user = await getCurrentUser()
+    
+    // Agregar timeout para evitar que getCurrentUser() se cuelgue indefinidamente
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('getCurrentUser timeout after 10 seconds')), 10000)
+    })
+    
+    const user = await Promise.race([
+      getCurrentUser(),
+      timeoutPromise
+    ])
+    
     console.log('✅ [useUser] User fetched successfully:', {
       hasUser: !!user,
       username: user?.username,
@@ -16,7 +26,8 @@ const fetcher = async () => {
   } catch (error) {
     console.error('❌ [useUser] Error fetching user:', {
       error,
-      errorMessage: error instanceof Error ? error.message : String(error)
+      errorMessage: error instanceof Error ? error.message : String(error),
+      isTimeout: error instanceof Error && error.message.includes('timeout')
     })
     throw error
   }
@@ -24,7 +35,13 @@ const fetcher = async () => {
 
 export default function useUser({ redirect = '' } = {}) {
   const { cache } = useSWRConfig()
-  const { data: user, error, isValidating } = useSWR('user', fetcher)
+  const { data: user, error, isValidating } = useSWR('user', fetcher, {
+    errorRetryCount: 3,
+    errorRetryInterval: 2000,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    dedupingInterval: 5000
+  })
   const hasRedirected = useRef(false)
   const renderCount = useRef(0)
   
