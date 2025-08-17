@@ -39,6 +39,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   const pictureUrl = useMemo(() => {
     const sources = [
       userAttributes?.picture, // Priority: userAttributes from ID token (Amplify v6)
+      user?.google_picture, // From updated useUser hook
       user?.picture,
       user?.signInUserSession?.idToken?.payload?.picture,
       user?.attributes?.picture,
@@ -97,6 +98,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   const userEmail = useMemo(() => {
     const sources = [
       userAttributes?.email, // Priority: userAttributes from ID token
+      user?.google_email, // From updated useUser hook
       user?.signInDetails?.loginId, // Amplify v6
       user?.username, // Amplify v6
       user?.email, // Legacy
@@ -221,9 +223,11 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     }
   }, [currentImageUrl, handleImageError])
 
-  // Get user name from different possible sources
+  // Get user name from different possible sources - prioritize userAttributes
   const getUserName = useCallback(() => {
     const sources = [
+      userAttributes?.name, // Priority: Google OAuth name from userAttributes
+      user?.google_name, // From updated useUser hook
       user?.name,
       user?.signInUserSession?.idToken?.payload?.name,
       user?.attributes?.name,
@@ -241,7 +245,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       }
     }
     return null
-  }, [user])
+  }, [user, userAttributes])
 
   // Get user initials as fallback
   const getUserInitials = useCallback(() => {

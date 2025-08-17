@@ -35,8 +35,24 @@ const Chat: NextPage = () => {
   useEffect(() => {
     const loadUserFromToken = async () => {
       if (user && !userAttributes && !attributesLoading) {
+        console.log('🔍 [Chat] Loading user attributes from token...')
         setAttributesLoading(true)
         try {
+          // Primero intentar obtener desde los datos ya disponibles en useUser
+          if (user.google_name || user.google_email || user.google_picture) {
+            console.log('✅ [Chat] Using pre-loaded Google data from useUser')
+            const attributes = {
+              name: user.google_name || user.name || '',
+              email: user.google_email || user.email || user.signInDetails?.loginId || '',
+              picture: user.google_picture || ''
+            }
+            setUserAttributes(attributes)
+            setAttributesLoading(false)
+            return
+          }
+
+          // Fallback: Extraer desde el token si no están disponibles
+          console.log('🔄 [Chat] Fallback: extracting from token...')
           const session = await fetchAuthSession()
           const idToken = session.tokens?.idToken
           
@@ -50,12 +66,14 @@ const Chat: NextPage = () => {
               picture: payload.picture || ''
             }
             
+            console.log('✅ [Chat] Extracted attributes from token:', attributes)
             setUserAttributes(attributes)
           } else {
+            console.log('⚠️ [Chat] No idToken found, setting empty attributes')
             setUserAttributes({})
           }
         } catch (error) {
-          console.error('Error extracting user from token:', error)
+          console.error('❌ [Chat] Error extracting user from token:', error)
           setUserAttributes({})
         } finally {
           setAttributesLoading(false)
@@ -71,6 +89,11 @@ const Chat: NextPage = () => {
     // First try to get name from user attributes (real name from Google)
     if (userAttributes?.name) {
       return userAttributes.name
+    }
+    
+    // Try new Google fields from useUser
+    if (user?.google_name) {
+      return user.google_name
     }
     
     // Fallback to email-based username extraction
@@ -91,6 +114,11 @@ const Chat: NextPage = () => {
     // First try to get email from user attributes (real email from Google)
     if (userAttributes?.email) {
       return userAttributes.email
+    }
+    
+    // Try new Google fields from useUser
+    if (user?.google_email) {
+      return user.google_email
     }
     
     // Fallback to Amplify user object
