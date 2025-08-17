@@ -40,7 +40,7 @@ const AuthUI: NextPage = () => {
       hasRedirected.current = true
       
       // Limpiar cache de SWR para forzar revalidación
-      cache.clear()
+      cache.delete('user')
       
       // El redirect a /chat se hace automáticamente por la configuración OAuth
       // No necesitamos hacer Router.push aquí
