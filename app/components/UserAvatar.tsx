@@ -3,6 +3,7 @@ import { AvatarCache } from '../utils/avatarCache'
 
 interface UserAvatarProps {
   user: any
+  userAttributes?: Record<string, string> | null
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   className?: string
   showBorder?: boolean
@@ -11,6 +12,7 @@ interface UserAvatarProps {
 
 const UserAvatar: React.FC<UserAvatarProps> = ({ 
   user, 
+  userAttributes,
   size = 'md', 
   className = '',
   showBorder = false,
@@ -36,6 +38,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   // Get user picture from different possible sources with fallbacks
   const pictureUrl = useMemo(() => {
     const sources = [
+      userAttributes?.picture, // Priority: userAttributes from ID token (Amplify v6)
       user?.picture,
       user?.signInUserSession?.idToken?.payload?.picture,
       user?.attributes?.picture,
@@ -81,7 +84,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       }
     }
     return null
-  }, [user])
+  }, [user, userAttributes])
 
   // Enhanced image loading state with retry mechanism
   const [imageError, setImageError] = useState(false)
@@ -90,12 +93,15 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null)
   const [cachedAvatar, setCachedAvatar] = useState<string | null>(null)
 
-  // Get user email for cache key
+  // Get user email for cache key - prioritize userAttributes from Amplify v6
   const userEmail = useMemo(() => {
     const sources = [
-      user?.email,
-      user?.signInUserSession?.idToken?.payload?.email,
-      user?.attributes?.email
+      userAttributes?.email, // Priority: userAttributes from ID token
+      user?.signInDetails?.loginId, // Amplify v6
+      user?.username, // Amplify v6
+      user?.email, // Legacy
+      user?.signInUserSession?.idToken?.payload?.email, // Legacy
+      user?.attributes?.email // Legacy
     ]
     
     for (const source of sources) {
@@ -104,7 +110,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       }
     }
     return null
-  }, [user])
+  }, [user, userAttributes])
 
   // Reset error state when user changes and check cache
   useEffect(() => {

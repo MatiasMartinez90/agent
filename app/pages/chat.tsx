@@ -409,7 +409,7 @@ const Chat: NextPage = () => {
               <p className="text-white text-sm font-medium">{getUserName()}</p>
               <p className="text-slate-400 text-xs">{getUserEmail()}</p>
             </div>
-            <UserAvatar user={user} size="md" />
+            <UserAvatar user={user} userAttributes={userAttributes} size="md" />
             {/* Debug button - only in development */}
             {process.env.NODE_ENV === 'development' && (
               <button
@@ -447,7 +447,7 @@ const Chat: NextPage = () => {
               <div className={`flex items-start space-x-4 max-w-[95%] sm:max-w-2xl ${message.isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
                 {/* Avatar */}
                 {message.isUser ? (
-                  <UserAvatar user={user} size="md" />
+                  <UserAvatar user={user} userAttributes={userAttributes} size="md" />
                 ) : (
                   <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-r from-green-500 to-emerald-500">
                     <span className="text-white text-sm">🤖</span>

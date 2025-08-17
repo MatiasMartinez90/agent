@@ -20,7 +20,7 @@ function MyApp({ Component, pageProps }: AppProps) {
             domain: env.cognitoDomain,
             scopes: ['email', 'openid', 'profile'],
             redirectSignIn: [
-              typeof window !== 'undefined' ? window.location.origin + '/admin' : 'http://localhost:3000/admin'
+              typeof window !== 'undefined' ? window.location.origin + '/chat' : 'http://localhost:3000/chat'
             ],
             redirectSignOut: [
               typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
