@@ -28,7 +28,16 @@ const fetcher = async () => {
       
       // Método 2: Usar fetchAuthSession que es más confiable después de OAuth
       try {
-        const session = await fetchAuthSession()
+        const sessionTimeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('fetchAuthSession timeout')), 5000)
+        })
+        
+        const session = await Promise.race([
+          fetchAuthSession(),
+          sessionTimeoutPromise
+        ]) as Awaited<ReturnType<typeof fetchAuthSession>>
+        
+        console.log('🔍 [useUser] Session fetched, checking tokens...')
         
         if (!session.tokens?.idToken) {
           throw new Error('No ID token found in session')
