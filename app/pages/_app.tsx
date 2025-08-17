@@ -16,6 +16,32 @@ console.log('🌍 [Global] signInWithRedirect imported - OAuth listener should b
 function MyApp({ Component, pageProps }: AppProps) {
   const { env } = useEnv()
   
+  // Listen for auth events - MUST be before any conditional returns
+  useEffect(() => {
+    if (!env) return // Don't set up listener if no config
+    
+    const hubListenerCancel = Hub.listen('auth', (data) => {
+      const { payload } = data
+      console.log('🔔 [Hub] Auth event:', payload.event)
+
+      switch (payload.event) {
+        case 'signedIn':
+        case 'signInWithRedirect':
+          console.log('✅ [Hub] User signed in successfully')
+          window.dispatchEvent(new CustomEvent('amplify-auth-success'))
+          break
+        case 'signInWithRedirect_failure':
+          console.error('❌ [Hub] Sign in failed:', payload.data)
+          break
+        case 'tokenRefresh':
+          console.log('🔄 [Hub] Token refreshed')
+          break
+      }
+    })
+
+    return () => hubListenerCancel()
+  }, [env])
+  
   // Solo continúa si tenemos la configuración
   if (!env) {
     return (
@@ -64,10 +90,10 @@ function MyApp({ Component, pageProps }: AppProps) {
     userPoolId: env.cognitoUserPoolId,
     clientId: env.cognitoUserPoolWebClientId,
     domain: env.cognitoDomain,
-    redirectSignIn: amplifyConfig.Auth.Cognito.loginWith.oauth.redirectSignIn,
-    redirectSignOut: amplifyConfig.Auth.Cognito.loginWith.oauth.redirectSignOut,
-    providers: amplifyConfig.Auth.Cognito.loginWith.oauth.providers,
-    scopes: amplifyConfig.Auth.Cognito.loginWith.oauth.scopes
+    redirectSignIn: amplifyConfig.Auth?.Cognito?.loginWith?.oauth?.redirectSignIn,
+    redirectSignOut: amplifyConfig.Auth?.Cognito?.loginWith?.oauth?.redirectSignOut,
+    providers: amplifyConfig.Auth?.Cognito?.loginWith?.oauth?.providers,
+    scopes: amplifyConfig.Auth?.Cognito?.loginWith?.oauth?.scopes
   })
   
   try {
@@ -78,30 +104,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     console.error('❌ [Amplify] Configuration failed:', error)
   }
 
-  // Listen for auth events
-  useEffect(() => {
-    const hubListenerCancel = Hub.listen('auth', (data) => {
-      const { payload } = data
-      console.log('🔔 [Hub] Auth event:', payload.event)
 
-      switch (payload.event) {
-        case 'signedIn':
-        case 'signInWithRedirect':
-          console.log('✅ [Hub] User signed in successfully')
-          window.dispatchEvent(new CustomEvent('amplify-auth-success'))
-          break
-        case 'signInWithRedirect_failure':
-        case 'signIn_failure':
-          console.error('❌ [Hub] Sign in failed:', payload.data)
-          break
-        case 'tokenRefresh':
-          console.log('🔄 [Hub] Token refreshed')
-          break
-      }
-    })
-
-    return () => hubListenerCancel()
-  }, [])
 
   return (
     <>

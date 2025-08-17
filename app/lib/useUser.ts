@@ -177,7 +177,7 @@ export default function useUser({ redirect = '' } = {}) {
 
   // Simple debug logging
   if (user) {
-    console.log('👤 [useUser] Authenticated:', user.email || user.username)
+    console.log('👤 [useUser] Authenticated:', (user as any).email || user.username)
   } else if (loggedOut) {
     console.log('👤 [useUser] Not authenticated')
   }

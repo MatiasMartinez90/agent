@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import SmartUserAvatar from './SmartUserAvatar'
+import SimpleUserAvatar from './SimpleUserAvatar'
 import AIInterviewLogo from './AIInterviewLogo'
 
 interface AuthenticatedHeaderProps {
@@ -97,12 +97,11 @@ export default function AuthenticatedHeader({ user, signOut }: AuthenticatedHead
               className="flex items-center space-x-2 p-2 rounded-xl hover:bg-slate-700/50 transition-all duration-200 group"
             >
               {/* User Avatar */}
-              <SmartUserAvatar 
+              <SimpleUserAvatar 
                 user={user} 
                 size="lg" 
                 showBorder={true}
                 borderColor="border-slate-600 group-hover:border-green-400/70 transition-colors"
-                priority="high"
               />
               
               {/* Dropdown Arrow - Hidden on mobile */}
@@ -165,12 +164,11 @@ export default function AuthenticatedHeader({ user, signOut }: AuthenticatedHead
             {/* User Info */}
             <div className="p-6 border-b border-slate-700">
               <div className="flex items-center space-x-4">
-                <SmartUserAvatar 
+                <SimpleUserAvatar 
                   user={user} 
                   size="xl" 
                   showBorder={true}
                   borderColor="border-green-400/30"
-                  priority="high"
                 />
                 <div className="flex-1 min-w-0">
                   <div className="text-white font-semibold text-sm truncate">

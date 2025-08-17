@@ -19,8 +19,7 @@ const SmartUserAvatar: React.FC<SmartUserAvatarProps> = ({
   borderColor = 'border-slate-600',
   priority = 'normal'
 }) => {
-  const [imageState, setImageState] = useState<'loading' | 'loaded' | 'error' | 'timeout'>('loading')
-  const [showFallback, setShowFallback] = useState(false)
+  const [imageState, setImageState] = useState<'loading' | 'loaded' | 'error'>('loading')
   const [isMobile, setIsMobile] = useState(false)
 
   const sizeClasses = {
@@ -103,50 +102,23 @@ const SmartUserAvatar: React.FC<SmartUserAvatarProps> = ({
     }
   }, [isMobile, priority])
 
-  // Handle image loading with smart timeout
+  // Simplified image loading logic
   useEffect(() => {
     if (!pictureUrl) {
       setImageState('error')
-      setShowFallback(true)
       return
     }
 
     setImageState('loading')
-    setShowFallback(false)
 
-    const timeout = getTimeout()
-    const fallbackDelay = getFallbackDelay()
-
-    // Show fallback after delay (but keep trying to load)
-    const fallbackTimer = setTimeout(() => {
-      if (imageState === 'loading') {
-        setShowFallback(true)
-      }
-    }, fallbackDelay)
-
-    // Absolute timeout
-    const absoluteTimer = setTimeout(() => {
-      if (imageState === 'loading') {
-        setImageState('timeout')
-        setShowFallback(true)
-      }
-    }, timeout)
-
-    // Preload image
     const img = new Image()
     
     img.onload = () => {
-      clearTimeout(fallbackTimer)
-      clearTimeout(absoluteTimer)
       setImageState('loaded')
-      setShowFallback(false)
     }
     
     img.onerror = () => {
-      clearTimeout(fallbackTimer)
-      clearTimeout(absoluteTimer)
       setImageState('error')
-      setShowFallback(true)
     }
 
     // Configure image loading
@@ -155,57 +127,49 @@ const SmartUserAvatar: React.FC<SmartUserAvatarProps> = ({
     img.src = pictureUrl
 
     return () => {
-      clearTimeout(fallbackTimer)
-      clearTimeout(absoluteTimer)
       img.onload = null
       img.onerror = null
     }
-  }, [pictureUrl, isMobile, priority, imageState, getTimeout])
+  }, [pictureUrl])
 
-  const shouldShowImage = pictureUrl && imageState === 'loaded' && !showFallback
+  const shouldShowImage = pictureUrl && imageState === 'loaded'
 
   return (
     <div className={`${sizeClasses[size]} rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gradient-to-r from-blue-500 to-purple-500 relative ${showBorder ? `border-2 ${borderColor}` : ''} ${className}`}>
-      {shouldShowImage ? (
+      {/* Image with proper conditional rendering */}
+      {shouldShowImage && (
         <AvatarImage 
           src={pictureUrl} 
           alt={initials}
-          className="w-full h-full object-cover rounded-full transition-opacity duration-300"
+          className="w-full h-full object-cover rounded-full"
         />
-      ) : null}
+      )}
       
-      {/* Always render initials as fallback */}
-      <span 
-        className={`text-white font-medium ${textSizes[size]} select-none transition-opacity duration-300`}
-        style={{ 
-          opacity: shouldShowImage && !showFallback ? 0 : 1,
-          position: shouldShowImage ? 'absolute' : 'static'
-        }}
-      >
-        {initials}
-      </span>
+      {/* Initials - only when no image is showing */}
+      {!shouldShowImage && imageState !== 'loading' && (
+        <span className={`text-white font-medium ${textSizes[size]} select-none`}>
+          {initials}
+        </span>
+      )}
       
-      {/* Loading indicator - only show briefly and not on mobile */}
-      {!isMobile && imageState === 'loading' && !showFallback && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-500">
-          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white opacity-70"></div>
-        </div>
+      {/* Loading state - show loading spinner or initials */}
+      {imageState === 'loading' && !shouldShowImage && (
+        <>
+          {isMobile ? (
+            <span className={`text-white font-medium ${textSizes[size]} select-none`}>
+              {initials}
+            </span>
+          ) : (
+            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white opacity-70"></div>
+          )}
+        </>
       )}
       
       {/* Debug indicators (development only) */}
-      {process.env.NODE_ENV === 'development' && (
-        <>
-          {imageState === 'timeout' && (
-            <div className="absolute -top-1 -left-1 w-3 h-3 bg-orange-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
-              ⏱
-            </div>
-          )}
-          {imageState === 'error' && (
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
-              ❌
-            </div>
-          )}
-        </>
+      {process.env.NODE_ENV === 'development' && imageState === 'error' && (
+        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
+          ❌
+        </div>
       )}
     </div>
   )

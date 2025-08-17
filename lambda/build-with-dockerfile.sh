@@ -5,7 +5,7 @@ echo "🐳 Compilando Lambda usando Dockerfile..."
 
 # Construir imagen Docker
 echo "📦 Construyendo imagen Docker..."
-docker build -f Dockerfile.lambda-build -t lambda-builder .
+docker build --platform linux/amd64 -f Dockerfile.lambda-build -t lambda-builder .
 
 # Ejecutar container y extraer ZIP
 echo "🗜️ Creando ZIP con dependencias..."

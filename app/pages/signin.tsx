@@ -1,5 +1,5 @@
 import { NextPage } from 'next'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { signInWithRedirect, getCurrentUser } from 'aws-amplify/auth'
 import { Hub } from 'aws-amplify/utils'
 
@@ -7,12 +7,48 @@ import { Hub } from 'aws-amplify/utils'
 let hubUnsubscribe: (() => void) | null = null
 
 const SignIn: NextPage = () => {
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const getUser = useCallback(async () => {
+    try {
+      console.log('🔍 [SignIn] Checking current user...')
+      console.log('🔍 [SignIn] Current URL during check:', window.location.href)
+      
+      const currentUser = await getCurrentUser()
+      console.log('✅ [SignIn] User found:', {
+        username: currentUser.username,
+        userId: currentUser.userId,
+        signInDetails: currentUser.signInDetails
+      })
+      
+      // Check localStorage for tokens
+      const clientId = '2sfsss72kin03gbilraa1pvlb5'
+      const cognitoKeys = Object.keys(localStorage).filter(key => key.includes('CognitoIdentityServiceProvider'))
+      console.log('🔍 [SignIn] Cognito localStorage keys found:', cognitoKeys)
+      
+      setUser(currentUser)
+      setLoading(false)
+      
+      // Redirect to admin after successful login
+      setTimeout(() => {
+        console.log('🚀 [SignIn] Redirecting to /admin...')
+        window.location.href = '/admin'
+      }, 1000)
+      
+    } catch (error) {
+      console.log('👤 [SignIn] No user signed in:', {
+        error: error instanceof Error ? error.message : String(error),
+        currentURL: window.location.href,
+        hasCode: window.location.search.includes('code=')
+      })
+      setLoading(false)
+    }
+  }, [])
 
   // Hub event handler function
-  const handleHubEvent = ({ payload }: any) => {
+  const handleHubEvent = useCallback(({ payload }: any) => {
     console.log('🔔 [SignIn] Hub auth event received:', {
       event: payload.event,
       data: payload.data,
@@ -39,7 +75,7 @@ const SignIn: NextPage = () => {
       default:
         console.log('🔔 [SignIn] Other auth event:', payload.event)
     }
-  }
+  }, [getUser])
 
   // Setup Hub listener outside of useEffect to avoid v6 issues
   useEffect(() => {
@@ -105,43 +141,7 @@ const SignIn: NextPage = () => {
         hubUnsubscribe = null
       }
     }
-  }, [])
-
-  const getUser = async () => {
-    try {
-      console.log('🔍 [SignIn] Checking current user...')
-      console.log('🔍 [SignIn] Current URL during check:', window.location.href)
-      
-      const currentUser = await getCurrentUser()
-      console.log('✅ [SignIn] User found:', {
-        username: currentUser.username,
-        userId: currentUser.userId,
-        signInDetails: currentUser.signInDetails
-      })
-      
-      // Check localStorage for tokens  
-      const clientId = '2sfsss72kin03gbilraa1pvlb5'
-      const cognitoKeys = Object.keys(localStorage).filter(key => key.includes('CognitoIdentityServiceProvider'))
-      console.log('🔍 [SignIn] Cognito localStorage keys found:', cognitoKeys)
-      
-      setUser(currentUser)
-      setLoading(false)
-      
-      // Redirect to admin after successful login
-      setTimeout(() => {
-        console.log('🚀 [SignIn] Redirecting to /admin...')
-        window.location.href = '/admin'
-      }, 1000)
-      
-    } catch (error) {
-      console.log('👤 [SignIn] No user signed in:', {
-        error: error.message,
-        currentURL: window.location.href,
-        hasCode: window.location.search.includes('code=')
-      })
-      setLoading(false)
-    }
-  }
+  }, [handleHubEvent, getUser])
 
   const handleGoogleSignIn = async () => {
     try {
@@ -157,12 +157,13 @@ const SignIn: NextPage = () => {
       console.log('✅ [SignIn] signInWithRedirect result:', result)
       
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
       console.error('❌ [SignIn] signInWithRedirect failed:', {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
+        message: errorMessage,
+        name: error instanceof Error ? error.name : 'Unknown',
+        stack: error instanceof Error ? error.stack : undefined
       })
-      setError(`Error al iniciar sesión con Google: ${error.message}`)
+      setError(`Error al iniciar sesión con Google: ${errorMessage}`)
     }
   }
 

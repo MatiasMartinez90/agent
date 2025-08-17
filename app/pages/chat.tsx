@@ -24,7 +24,7 @@ interface Message {
 }
 
 const Chat: NextPage = () => {
-  const { user, loading, loggedOut, signOut, loadingMessage } = useUser({ redirect: '/signin' })
+  const { user, loading, loggedOut, signOut } = useUser({ redirect: '/signin' })
   
   // State for user attributes from Amplify v6
   const [userAttributes, setUserAttributes] = useState<Record<string, string> | null>(null)
@@ -39,12 +39,13 @@ const Chat: NextPage = () => {
         setAttributesLoading(true)
         try {
           // Primero intentar obtener desde los datos ya disponibles en useUser
-          if (user.google_name || user.google_email || user.google_picture) {
+          const userAny = user as any
+          if (userAny.google_name || userAny.google_email || userAny.google_picture) {
             console.log('✅ [Chat] Using pre-loaded Google data from useUser')
             const attributes = {
-              name: user.google_name || user.name || '',
-              email: user.google_email || user.email || user.signInDetails?.loginId || '',
-              picture: user.google_picture || ''
+              name: userAny.google_name || userAny.name || '',
+              email: userAny.google_email || userAny.email || userAny.signInDetails?.loginId || '',
+              picture: userAny.google_picture || ''
             }
             setUserAttributes(attributes)
             setAttributesLoading(false)
@@ -92,8 +93,9 @@ const Chat: NextPage = () => {
     }
     
     // Try new Google fields from useUser
-    if (user?.google_name) {
-      return user.google_name
+    const userAny = user as any
+    if (userAny?.google_name) {
+      return userAny.google_name
     }
     
     // Fallback to email-based username extraction
@@ -117,8 +119,9 @@ const Chat: NextPage = () => {
     }
     
     // Try new Google fields from useUser
-    if (user?.google_email) {
-      return user.google_email
+    const userAny = user as any
+    if (userAny?.google_email) {
+      return userAny.google_email
     }
     
     // Fallback to Amplify user object
@@ -249,7 +252,7 @@ const Chat: NextPage = () => {
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <LoadingSpinner 
           size="lg" 
-          text={loading ? loadingMessage : 'Cargando conversación...'}
+          text="Cargando conversación..."
           variant="default"
         />
       </div>
