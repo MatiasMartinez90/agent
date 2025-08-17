@@ -240,20 +240,22 @@ const fetcher = async () => {
       console.log('❌ [DEBUG] All OAuth attempts failed')
     }
     
-    // ÚLTIMO RECURSO: APIs de Amplify con timeout muy corto
+    // ÚLTIMO RECURSO: APIs de Amplify con timeout muy corto + fetchAuthSession for v6
     console.log('🔄 [DEBUG] Falling back to Amplify APIs (last resort)...')
     
     try {
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
-          console.log('❌ [DEBUG] Amplify getCurrentUser timeout after 1000ms')
+          console.log('❌ [DEBUG] Amplify getCurrentUser timeout after 2000ms')
           reject(new Error('Amplify timeout'))
-        }, 1000)
+        }, 2000) // Aumentar timeout para OAuth flow
       })
       
-      console.log('🔍 [DEBUG] Calling getCurrentUser with 1s timeout...')
+      console.log('🔍 [DEBUG] Calling getCurrentUser with 2s timeout...')
+      const userPromise = getCurrentUser()
+      
       const user = await Promise.race([
-        getCurrentUser(),
+        userPromise,
         timeoutPromise
       ]) as Awaited<ReturnType<typeof getCurrentUser>>
       
@@ -263,6 +265,41 @@ const fetcher = async () => {
         hasUser: !!user,
         loadTime: `${loadTime}ms`
       })
+      
+      // Si getCurrentUser funciona, intentar obtener el authSession para extraer tokens
+      try {
+        console.log('🔍 [DEBUG] Extracting tokens from fetchAuthSession...')
+        const session = await fetchAuthSession()
+        const idToken = session.tokens?.idToken
+        
+        if (idToken) {
+          console.log('✅ [DEBUG] Got idToken from session, parsing payload...')
+          const payload = JSON.parse(atob(idToken.toString().split('.')[1]))
+          
+          // Crear usuario enriquecido con datos del token
+          const enrichedUser = {
+            ...user,
+            // Datos específicos de Google OAuth
+            google_name: payload.name,
+            google_picture: payload.picture,
+            google_email: payload.email,
+            email: payload.email,
+            name: payload.name,
+            picture: payload.picture
+          }
+          
+          console.log('✅ [DEBUG] Enriched user with token data:', {
+            username: enrichedUser.username,
+            google_name: enrichedUser.google_name,
+            google_email: enrichedUser.google_email,
+            hasPicture: !!enrichedUser.google_picture
+          })
+          
+          return enrichedUser
+        }
+      } catch (sessionError) {
+        console.log('⚠️ [DEBUG] Could not extract session tokens:', sessionError)
+      }
       
       return user
     } catch (amplifyError) {

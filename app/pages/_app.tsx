@@ -7,17 +7,15 @@ import '@aws-amplify/ui-react/styles.css'
 import useEnv from '../lib/useEnv'
 
 function MyApp({ Component, pageProps }: AppProps) {
-  const { env } = useEnv()
-  if (!env) return <>Loading...</>
-
+  // CORRECCIÓN CRÍTICA: Usar variables de entorno directas para evitar dependency en /env.json
   const amplifyConfig: ResourcesConfig = {
     Auth: {
       Cognito: {
-        userPoolId: env.cognitoUserPoolId,
-        userPoolClientId: env.cognitoUserPoolWebClientId,
+        userPoolId: process.env.NEXT_PUBLIC_AUTH_USER_POOL_ID || 'us-east-1_LXi5Bd95p',
+        userPoolClientId: process.env.NEXT_PUBLIC_AUTH_WEB_CLIENT_ID || '7ho22jco9j63c3hmsrsp4bj0ti',
         loginWith: {
           oauth: {
-            domain: env.cognitoDomain,
+            domain: process.env.NEXT_PUBLIC_COGNITO_DOMAIN || 'agent-auth-42h6i1bt.auth.us-east-1.amazoncognito.com',
             scopes: ['email', 'openid', 'profile'],
             redirectSignIn: [
               typeof window !== 'undefined' ? window.location.origin + '/chat' : 'http://localhost:3000/chat'
@@ -32,6 +30,12 @@ function MyApp({ Component, pageProps }: AppProps) {
       }
     }
   }
+  
+  console.log('🔧 [Amplify] Configuration:', {
+    userPoolId: amplifyConfig.Auth.Cognito.userPoolId,
+    userPoolClientId: amplifyConfig.Auth.Cognito.userPoolClientId,
+    domain: amplifyConfig.Auth.Cognito.loginWith.oauth.domain
+  })
   
   Amplify.configure(amplifyConfig)
 
