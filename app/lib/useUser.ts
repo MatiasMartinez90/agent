@@ -25,6 +25,33 @@ const extractUserFromLocalStorage = () => {
       // Log all Cognito keys to see what's actually there
       const allKeys = Object.keys(localStorage).filter(key => key.includes('Cognito'))
       console.log('🔍 [DEBUG] All Cognito keys in localStorage:', allKeys)
+      
+      // LIMPIEZA AUTOMÁTICA: Detectar y limpiar tokens de clientId obsoleto
+      const obsoleteClientId = '2sfsss72kin03gbilraa1pvlb5'
+      const obsoleteKeys = allKeys.filter(key => key.includes(obsoleteClientId))
+      
+      if (obsoleteKeys.length > 0) {
+        console.log('🧹 [DEBUG] Found obsolete tokens from old clientId, cleaning up:', obsoleteKeys)
+        obsoleteKeys.forEach(key => {
+          localStorage.removeItem(key)
+          console.log('🗑️ [DEBUG] Removed obsolete key:', key)
+        })
+        
+        // También limpiar cualquier otra clave de Cognito que no sea del clientId actual
+        const currentClientKeys = allKeys.filter(key => key.includes(clientId))
+        const otherCognitoKeys = allKeys.filter(key => !key.includes(clientId) && !key.includes(obsoleteClientId))
+        
+        if (otherCognitoKeys.length > 0) {
+          console.log('🧹 [DEBUG] Cleaning other Cognito keys:', otherCognitoKeys)
+          otherCognitoKeys.forEach(key => {
+            localStorage.removeItem(key)
+            console.log('🗑️ [DEBUG] Removed other key:', key)
+          })
+        }
+        
+        console.log('✅ [DEBUG] localStorage cleaned, user needs to re-authenticate')
+      }
+      
       return null
     }
     
@@ -245,6 +272,16 @@ const fetcher = async () => {
         errorMessage: amplifyError instanceof Error ? amplifyError.message : String(amplifyError),
         loadTime: `${loadTime}ms`
       })
+      
+      // DETECCIÓN INTELIGENTE: Si llegamos aquí, probablemente necesitamos re-auth
+      const allCognitoKeys = Object.keys(localStorage).filter(key => key.includes('Cognito'))
+      const hasObsoleteKeys = allCognitoKeys.some(key => key.includes('2sfsss72kin03gbilraa1pvlb5'))
+      
+      if (hasObsoleteKeys || allCognitoKeys.length === 0) {
+        console.log('🚨 [DEBUG] Authentication system requires fresh login. Reason:', hasObsoleteKeys ? 'Obsolete tokens detected' : 'No tokens found')
+        console.log('🔄 [DEBUG] User will be redirected to signin page for re-authentication')
+      }
+      
       throw new Error('User is not authenticated')
     }
     
