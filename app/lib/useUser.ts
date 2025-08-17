@@ -130,7 +130,7 @@ const extractUserFromLocalStorage = () => {
     return user
   } catch (error) {
     console.error('❌ [DEBUG] Error extracting from localStorage:', error)
-    console.error('❌ [DEBUG] Error stack:', error.stack)
+    console.error('❌ [DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack available')
     return null
   }
 }
