@@ -11,6 +11,14 @@ const fetcher = async () => {
     try {
       if (typeof window !== 'undefined') {
         const clientId = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_WEB_CLIENT_ID || '2sfsss72kin03gbilraa1pvlb5'
+        
+        // Esperar un poco si acabamos de llegar del OAuth redirect
+        const isFromOAuth = window.location.pathname === '/chat' && !localStorage.getItem(`CognitoIdentityServiceProvider.${clientId}.LastAuthUser`)
+        if (isFromOAuth) {
+          console.log('🔄 [useUser] OAuth redirect detected, waiting for tokens to be saved...')
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+        
         const lastAuthUser = localStorage.getItem(`CognitoIdentityServiceProvider.${clientId}.LastAuthUser`)
         
         if (lastAuthUser) {
@@ -38,7 +46,8 @@ const fetcher = async () => {
               console.log('✅ [useUser] localStorage auth succeeded (fast path):', {
                 username: user.username,
                 email: payload.email,
-                tokenValid: true
+                tokenValid: true,
+                fromOAuth: isFromOAuth
               })
               
               return user
