@@ -7,10 +7,55 @@ const fetcher = async () => {
   try {
     console.log('🔍 [useUser] Checking authentication state...')
     
-    // Método 1: Intentar getCurrentUser con timeout corto
+    // Método 1: Acceso directo al localStorage (más rápido y confiable)
+    try {
+      if (typeof window !== 'undefined') {
+        const clientId = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_WEB_CLIENT_ID || '2sfsss72kin03gbilraa1pvlb5'
+        const lastAuthUser = localStorage.getItem(`CognitoIdentityServiceProvider.${clientId}.LastAuthUser`)
+        
+        if (lastAuthUser) {
+          const idTokenKey = `CognitoIdentityServiceProvider.${clientId}.${lastAuthUser}.idToken`
+          const idToken = localStorage.getItem(idTokenKey)
+          
+          if (idToken) {
+            // Verificar que el token no esté expirado
+            const payload = JSON.parse(atob(idToken.split('.')[1]))
+            const currentTime = Math.floor(Date.now() / 1000)
+            
+            if (payload.exp >= currentTime) {
+              // Token válido - crear objeto de usuario
+              const user = {
+                username: payload.username || payload.sub,
+                userId: payload.sub,
+                signInDetails: {
+                  loginId: payload.email || payload.username
+                },
+                ...(payload.email && { email: payload.email }),
+                ...(payload.name && { name: payload.name }),
+                ...(payload.picture && { picture: payload.picture })
+              }
+              
+              console.log('✅ [useUser] localStorage auth succeeded (fast path):', {
+                username: user.username,
+                email: payload.email,
+                tokenValid: true
+              })
+              
+              return user
+            } else {
+              console.log('⚠️ [useUser] localStorage token expired, trying Amplify methods...')
+            }
+          }
+        }
+      }
+    } catch (localStorageError) {
+      console.log('⚠️ [useUser] localStorage check failed, trying Amplify methods...')
+    }
+
+    // Método 2: Intentar getCurrentUser con timeout corto (fallback)
     try {
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('getCurrentUser timeout')), 3000)
+        setTimeout(() => reject(new Error('getCurrentUser timeout')), 2000)
       })
       
       const user = await Promise.race([
@@ -26,10 +71,10 @@ const fetcher = async () => {
     } catch (getCurrentUserError) {
       console.log('⚠️ [useUser] getCurrentUser failed, trying session-based approach...')
       
-      // Método 2: Usar fetchAuthSession que es más confiable después de OAuth
+      // Método 3: Usar fetchAuthSession (último recurso)
       try {
         const sessionTimeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('fetchAuthSession timeout')), 5000)
+          setTimeout(() => reject(new Error('fetchAuthSession timeout')), 3000)
         })
         
         const session = await Promise.race([
@@ -54,7 +99,6 @@ const fetcher = async () => {
           signInDetails: {
             loginId: payload.email || payload.username
           },
-          // Agregar propiedades adicionales si están disponibles
           ...(payload.email && { email: payload.email }),
           ...(payload.name && { name: payload.name }),
           ...(payload.picture && { picture: payload.picture })
@@ -68,61 +112,8 @@ const fetcher = async () => {
         
         return user
       } catch (sessionError) {
-        console.log('⚠️ [useUser] Session-based auth failed, trying localStorage fallback...')
-        
-        // Método 3: Acceso directo al localStorage (último recurso)
-        try {
-          if (typeof window === 'undefined') {
-            throw new Error('Not in browser environment')
-          }
-          
-          const clientId = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_WEB_CLIENT_ID || '2sfsss72kin03gbilraa1pvlb5'
-          const lastAuthUser = localStorage.getItem(`CognitoIdentityServiceProvider.${clientId}.LastAuthUser`)
-          
-          if (!lastAuthUser) {
-            throw new Error('No authenticated user found in localStorage')
-          }
-          
-          const idTokenKey = `CognitoIdentityServiceProvider.${clientId}.${lastAuthUser}.idToken`
-          const idToken = localStorage.getItem(idTokenKey)
-          
-          if (!idToken) {
-            throw new Error('No ID token found in localStorage')
-          }
-          
-          // Verificar que el token no esté expirado
-          const payload = JSON.parse(atob(idToken.split('.')[1]))
-          const currentTime = Math.floor(Date.now() / 1000)
-          
-          if (payload.exp < currentTime) {
-            throw new Error('ID token has expired')
-          }
-          
-          // Crear objeto de usuario desde localStorage
-          const user = {
-            username: payload.username || payload.sub,
-            userId: payload.sub,
-            signInDetails: {
-              loginId: payload.email || payload.username
-            },
-            // Agregar propiedades adicionales del token
-            ...(payload.email && { email: payload.email }),
-            ...(payload.name && { name: payload.name }),
-            ...(payload.picture && { picture: payload.picture })
-          }
-          
-          console.log('✅ [useUser] localStorage fallback succeeded:', {
-            username: user.username,
-            email: payload.email,
-            tokenValid: true,
-            lastAuthUser
-          })
-          
-          return user
-        } catch (localStorageError) {
-          console.error('❌ [useUser] localStorage fallback failed:', localStorageError)
-          throw new Error('User is not authenticated')
-        }
+        console.error('❌ [useUser] All authentication methods failed:', sessionError)
+        throw new Error('User is not authenticated')
       }
     }
   } catch (error) {
@@ -134,8 +125,7 @@ const fetcher = async () => {
 export default function useUser({ redirect = '' } = {}) {
   const { cache } = useSWRConfig()
   const { data: user, error, isValidating } = useSWR('user', fetcher, {
-    errorRetryCount: 3,
-    errorRetryInterval: 2000,
+    errorRetryCount: 0, // No retries - el fetcher ya tiene fallbacks internos
     revalidateOnFocus: false,
     revalidateOnReconnect: true,
     dedupingInterval: 5000
