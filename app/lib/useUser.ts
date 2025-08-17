@@ -68,8 +68,61 @@ const fetcher = async () => {
         
         return user
       } catch (sessionError) {
-        console.error('❌ [useUser] Session-based auth failed:', sessionError)
-        throw new Error('User is not authenticated')
+        console.log('⚠️ [useUser] Session-based auth failed, trying localStorage fallback...')
+        
+        // Método 3: Acceso directo al localStorage (último recurso)
+        try {
+          if (typeof window === 'undefined') {
+            throw new Error('Not in browser environment')
+          }
+          
+          const clientId = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_WEB_CLIENT_ID || '2sfsss72kin03gbilraa1pvlb5'
+          const lastAuthUser = localStorage.getItem(`CognitoIdentityServiceProvider.${clientId}.LastAuthUser`)
+          
+          if (!lastAuthUser) {
+            throw new Error('No authenticated user found in localStorage')
+          }
+          
+          const idTokenKey = `CognitoIdentityServiceProvider.${clientId}.${lastAuthUser}.idToken`
+          const idToken = localStorage.getItem(idTokenKey)
+          
+          if (!idToken) {
+            throw new Error('No ID token found in localStorage')
+          }
+          
+          // Verificar que el token no esté expirado
+          const payload = JSON.parse(atob(idToken.split('.')[1]))
+          const currentTime = Math.floor(Date.now() / 1000)
+          
+          if (payload.exp < currentTime) {
+            throw new Error('ID token has expired')
+          }
+          
+          // Crear objeto de usuario desde localStorage
+          const user = {
+            username: payload.username || payload.sub,
+            userId: payload.sub,
+            signInDetails: {
+              loginId: payload.email || payload.username
+            },
+            // Agregar propiedades adicionales del token
+            ...(payload.email && { email: payload.email }),
+            ...(payload.name && { name: payload.name }),
+            ...(payload.picture && { picture: payload.picture })
+          }
+          
+          console.log('✅ [useUser] localStorage fallback succeeded:', {
+            username: user.username,
+            email: payload.email,
+            tokenValid: true,
+            lastAuthUser
+          })
+          
+          return user
+        } catch (localStorageError) {
+          console.error('❌ [useUser] localStorage fallback failed:', localStorageError)
+          throw new Error('User is not authenticated')
+        }
       }
     }
   } catch (error) {
