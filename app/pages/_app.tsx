@@ -62,6 +62,30 @@ function MyApp({ Component, pageProps }: AppProps) {
     )
   }
 
+  // Dynamic redirect URLs based on environment
+  const getRedirectUrls = () => {
+    if (typeof window === 'undefined') {
+      // Server-side: use environment-based defaults
+      return {
+        signIn: process.env.NODE_ENV === 'development' 
+          ? 'http://localhost:3000/signin'
+          : 'https://agent.cloud-it.com.ar/signin',
+        signOut: process.env.NODE_ENV === 'development'
+          ? 'http://localhost:3000'
+          : 'https://agent.cloud-it.com.ar'
+      }
+    } else {
+      // Client-side: use current origin
+      const origin = window.location.origin
+      return {
+        signIn: `${origin}/signin`,
+        signOut: origin
+      }
+    }
+  }
+
+  const redirectUrls = getRedirectUrls()
+
   const amplifyConfig: ResourcesConfig = {
     Auth: {
       Cognito: {
@@ -72,12 +96,8 @@ function MyApp({ Component, pageProps }: AppProps) {
           oauth: {
             domain: env.cognitoDomain,
             scopes: ['email', 'openid', 'profile'],
-            redirectSignIn: [
-              'http://localhost:3001/signin'
-            ],
-            redirectSignOut: [
-              'http://localhost:3001'
-            ],
+            redirectSignIn: [redirectUrls.signIn],
+            redirectSignOut: [redirectUrls.signOut],
             responseType: 'code',
             providers: ['Google']
           }
@@ -90,6 +110,8 @@ function MyApp({ Component, pageProps }: AppProps) {
     userPoolId: env.cognitoUserPoolId,
     clientId: env.cognitoUserPoolWebClientId,
     domain: env.cognitoDomain,
+    environment: process.env.NODE_ENV,
+    currentOrigin: typeof window !== 'undefined' ? window.location.origin : 'server-side',
     redirectSignIn: amplifyConfig.Auth?.Cognito?.loginWith?.oauth?.redirectSignIn,
     redirectSignOut: amplifyConfig.Auth?.Cognito?.loginWith?.oauth?.redirectSignOut,
     providers: amplifyConfig.Auth?.Cognito?.loginWith?.oauth?.providers,
