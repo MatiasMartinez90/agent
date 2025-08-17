@@ -256,15 +256,15 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
   # Callback URLs para la aplicación
   callback_urls = compact([
     "https://${aws_cognito_user_pool_domain.user_pool_domain.domain}.auth.us-east-1.amazoncognito.com/oauth2/idpresponse",
-    "http://localhost:3000",                                                                                                                                                     # Para desarrollo local
-    "http://localhost:3000/admin",                                                                                                                                               # Para desarrollo local admin (legacy)
-    "http://localhost:3000/chat",                                                                                                                                                # Para desarrollo local chat
-    var.production_callback_url,                                                                                                                                                 # URL de producción (home)
-    "${var.production_callback_url}/admin",                                                                                                                                      # URL de producción admin (legacy)
-    "${var.production_callback_url}/chat",                                                                                                                                       # URL de producción chat
-    try(data.terraform_remote_state.frontend.outputs.frontend_endpoint, null) != null ? "https://${data.terraform_remote_state.frontend.outputs.frontend_endpoint}" : null,      # CloudFront URL (home)
+    "http://localhost:3000",                                                                                                                                                      # Para desarrollo local
+    "http://localhost:3000/admin",                                                                                                                                                # Para desarrollo local admin (legacy)
+    "http://localhost:3000/chat",                                                                                                                                                 # Para desarrollo local chat
+    var.production_callback_url,                                                                                                                                                  # URL de producción (home)
+    "${var.production_callback_url}/admin",                                                                                                                                       # URL de producción admin (legacy)
+    "${var.production_callback_url}/chat",                                                                                                                                        # URL de producción chat
+    try(data.terraform_remote_state.frontend.outputs.frontend_endpoint, null) != null ? "https://${data.terraform_remote_state.frontend.outputs.frontend_endpoint}" : null,       # CloudFront URL (home)
     try(data.terraform_remote_state.frontend.outputs.frontend_endpoint, null) != null ? "https://${data.terraform_remote_state.frontend.outputs.frontend_endpoint}/admin" : null, # CloudFront URL (admin - legacy)
-    try(data.terraform_remote_state.frontend.outputs.frontend_endpoint, null) != null ? "https://${data.terraform_remote_state.frontend.outputs.frontend_endpoint}/chat" : null  # CloudFront URL (chat)
+    try(data.terraform_remote_state.frontend.outputs.frontend_endpoint, null) != null ? "https://${data.terraform_remote_state.frontend.outputs.frontend_endpoint}/chat" : null   # CloudFront URL (chat)
   ])
 
   logout_urls = compact([
