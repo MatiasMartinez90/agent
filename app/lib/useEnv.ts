@@ -5,27 +5,27 @@ interface Env {
 }
 
 export default function useEnv() {
-  // SIEMPRE usar variables de entorno - no depender de /env.json
-  // Las variables deben estar configuradas en GitHub Secrets
+  // Variables de entorno con fallbacks conocidos
   const env: Env = {
-    cognitoUserPoolId: process.env.NEXT_PUBLIC_AUTH_USER_POOL_ID || '',
-    cognitoUserPoolWebClientId: process.env.NEXT_PUBLIC_AUTH_WEB_CLIENT_ID || '',
-    cognitoDomain: process.env.NEXT_PUBLIC_COGNITO_DOMAIN || '',
+    cognitoUserPoolId: process.env.NEXT_PUBLIC_AUTH_USER_POOL_ID || 'us-east-1_LXi5Bd95p',
+    cognitoUserPoolWebClientId: process.env.NEXT_PUBLIC_AUTH_WEB_CLIENT_ID || '7ho22jco9j63c3hmsrsp4bj0ti',
+    cognitoDomain: process.env.NEXT_PUBLIC_COGNITO_DOMAIN || 'agent-auth-vz26twi7.auth.us-east-1.amazoncognito.com',
   }
 
-  // Validar que todas las variables estén presentes
-  const isValid = env.cognitoUserPoolId && 
-                  env.cognitoUserPoolWebClientId && 
-                  env.cognitoDomain
-
-  console.log('🔧 [useEnv] Environment variables:', {
-    cognitoUserPoolId: env.cognitoUserPoolId ? `${env.cognitoUserPoolId.substring(0, 15)}...` : 'MISSING',
-    cognitoUserPoolWebClientId: env.cognitoUserPoolWebClientId ? `${env.cognitoUserPoolWebClientId.substring(0, 10)}...` : 'MISSING',
-    cognitoDomain: env.cognitoDomain ? `${env.cognitoDomain.split('.')[0]}...` : 'MISSING',
-    isValid
-  })
+  // Log para debugging - mostrar valores COMPLETOS si estamos en un entorno específico
+  if (typeof window !== 'undefined') {
+    console.log('🔧 [useEnv] FULL VALUES FOR DEBUGGING:')
+    console.log('cognitoUserPoolId:', env.cognitoUserPoolId)
+    console.log('cognitoUserPoolWebClientId:', env.cognitoUserPoolWebClientId)  
+    console.log('cognitoDomain:', env.cognitoDomain)
+    console.log('Environment vars available:', {
+      hasUserPoolId: !!process.env.NEXT_PUBLIC_AUTH_USER_POOL_ID,
+      hasClientId: !!process.env.NEXT_PUBLIC_AUTH_WEB_CLIENT_ID,
+      hasDomain: !!process.env.NEXT_PUBLIC_COGNITO_DOMAIN
+    })
+  }
 
   return { 
-    env: isValid ? Object.freeze(env) : null 
+    env: Object.freeze(env)
   }
 }
