@@ -28,10 +28,10 @@ const AuthUI: NextPage = () => {
   const { cache } = useSWRConfig()
   const hasRedirected = useRef(false)
 
-  // Usar useEffect para evitar múltiples redirects
+  // Limpiar cache cuando el usuario se autentica para evitar estados obsoletos
   useEffect(() => {
     if (route === 'authenticated' && !hasRedirected.current) {
-      console.log('✅ [AuthUI] Usuario autenticado, redirigiendo por primera vez...', {
+      console.log('✅ [AuthUI] Usuario autenticado, limpiando cache...', {
         userEmail: user?.signInDetails?.loginId || user?.username,
         userName: user?.username,
         timestamp: new Date().toISOString()
@@ -39,12 +39,14 @@ const AuthUI: NextPage = () => {
       
       hasRedirected.current = true
       
-      // Usar timeout para evitar conflictos con el render
-      setTimeout(() => {
-        Router.push('/chat')
-      }, 100)
+      // Limpiar cache de SWR para forzar revalidación
+      cache.clear()
+      
+      // El redirect a /chat se hace automáticamente por la configuración OAuth
+      // No necesitamos hacer Router.push aquí
+      console.log('✅ [AuthUI] Cache limpiada, el redirect a /chat será automático')
     }
-  }, [route, user])
+  }, [route, user, cache])
 
   if (route === 'authenticated') {
     return <div className="min-h-screen flex items-center justify-center bg-white">

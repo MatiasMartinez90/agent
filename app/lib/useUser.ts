@@ -4,7 +4,22 @@ import useSWR, { useSWRConfig } from 'swr'
 import { getCurrentUser, signOut as amplifySignOut } from 'aws-amplify/auth'
 
 const fetcher = async () => {
-  return getCurrentUser()
+  try {
+    console.log('🔍 [useUser] Fetching current user...')
+    const user = await getCurrentUser()
+    console.log('✅ [useUser] User fetched successfully:', {
+      hasUser: !!user,
+      username: user?.username,
+      signInDetails: user?.signInDetails?.loginId
+    })
+    return user
+  } catch (error) {
+    console.error('❌ [useUser] Error fetching user:', {
+      error,
+      errorMessage: error instanceof Error ? error.message : String(error)
+    })
+    throw error
+  }
 }
 
 export default function useUser({ redirect = '' } = {}) {
